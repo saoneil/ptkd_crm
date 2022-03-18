@@ -74,7 +74,7 @@ class MainApplication(tk.Frame):
             cursor = cnxn.cursor()
             sql_query = "SELECT * FROM ptkd_students.ptkd_students;"
             retval = pd.read_sql(sql_query, cnxn)
-            retval.to_csv(r'C:\Users\saone\Documents\Python Stuff\prod\crm\db_backup.csv')
+            retval.to_csv(r'C:\Users\saone\Documents\Python Stuff\prod\crm_files\db_backup.csv')
             dblabel.after(1000, refresh_status_saved())           
         def view_all_active_students():
             cnxn = get_connection_pyodbc()
