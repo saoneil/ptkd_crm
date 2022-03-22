@@ -8,7 +8,6 @@ import mysql.connector
 import imaplib
 import time
 import email.message
-import os
 
 
 window_width = 1000
@@ -405,6 +404,24 @@ class MainApplication(tk.Frame):
 
             cursor.close()
             cnxn.close()
+        def make_active_inactive():
+            studentid_1 = section4_entry1.get()
+            studentid_2 = section4_entry2.get()
+            studentid_3 = section4_entry3.get()
+            studentid_4 = section4_entry4.get()
+            id_list = [studentid_1, studentid_2, studentid_3, studentid_4]
+            conn = get_connection_connector()
+            cursor = conn.cursor()
+            for i in range(id_list.index('')):
+                sqlstring = "ptkd_make_student_active_inactive"
+                params_seq = (id_list[i],)
+                cursor.callproc(sqlstring, params_seq)
+            conn.commit()
+            cursor.close()
+            section4_entry1.delete(0, END)
+            section4_entry2.delete(0, END)
+            section4_entry3.delete(0, END)
+            section4_entry4.delete(0, END)
 
 
         #################
@@ -481,7 +498,22 @@ class MainApplication(tk.Frame):
         section3_entry8 = ttk.Entry(tab1, width=15)
         section3_entry8.grid(row=18, column=2, sticky=W, padx=(80,50))
 
+        #################
+        ### SECTION 4 ###
+        #################
+        section4_button1 = ttk.Button(tab1, text="Make Student(s) Active/Inactive", command = make_active_inactive)
+        section4_label1 = ttk.Label(tab1, text="Student ID:").grid(row=11, column=3, sticky=W, pady=(0,5), padx=(15,5))
 
+        section4_button1.grid(row=10, column=3, sticky=E, pady=(150,15), padx=(50,50))
+        section4_entry1 = ttk.Entry(tab1, width=8)
+        section4_entry1.grid(row=11, column=3, sticky=W, padx=(80,50))
+        section4_entry2 = ttk.Entry(tab1, width=8)
+        section4_entry2.grid(row=12, column=3, sticky=W, padx=(80,50))
+        section4_entry3 = ttk.Entry(tab1, width=8)
+        section4_entry3.grid(row=13, column=3, sticky=W, padx=(80,50))
+        section4_entry4 = ttk.Entry(tab1, width=8)
+        section4_entry4.grid(row=14, column=3, sticky=W, padx=(80,50))
+    
 
 if __name__ == "__main__":
     root = tk.Tk()
