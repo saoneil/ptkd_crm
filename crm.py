@@ -8,6 +8,7 @@ import mysql.connector
 import imaplib
 import time
 import email.message
+from mail_reader import print_sample
 
 
 window_width = 1000
@@ -43,12 +44,19 @@ class MainApplication(tk.Frame):
         nb.grid(row=0, column=0)
         tab1 = ttk.Frame(nb)
         nb.add(tab1, text='PTKD Students')
-        tab3 = ttk.Frame(nb)
-        nb.add(tab3, text='PTKD Financial Reporting')
         tab2 = ttk.Frame(nb)
-        nb.add(tab2, text='Team NS')
+        nb.add(tab2, text='PTKD Financial Reporting')
+        tab3 = ttk.Frame(nb)
+        nb.add(tab3, text='Team NS')
         
         
+        ############      #        #######          ###
+             #           # #       #      #           #
+             #          #   #      #      #           # 
+             #         #######     #   ###            #
+             #        #       #    #      #           #
+             #       #         #   #  #####         #####
+             
         row_label = tk.StringVar()
         time_label = tk.StringVar()
         row_label.set("# of records: " + str(0))
@@ -514,6 +522,27 @@ class MainApplication(tk.Frame):
         section4_entry4 = ttk.Entry(tab1, width=8)
         section4_entry4.grid(row=14, column=3, sticky=W, padx=(80,50))
     
+
+
+
+
+
+
+
+        ############      #        #######        #######
+             #           # #       #      #      #       #
+             #          #   #      #      #            # 
+             #         #######     #   ###         # 
+             #        #       #    #      #       #      #
+             #       #         #   #  #####       #######
+
+
+        string_var = print_sample()
+        print(string_var)
+        total_fees_label = ttk.Label(tab2, text="test text").grid(row=1, column=1, sticky=W, pady=(5,5), padx=(15,5))      
+        total_gear = ttk.Label(tab2, text="test text").grid(row=2, column=1, sticky=W, pady=(5,5), padx=(15,5))    
+        total_testing_other = ttk.Label(tab2, text="test text").grid(row=3, column=1, sticky=W, pady=(5,5), padx=(15,5))  
+
 
 if __name__ == "__main__":
     root = tk.Tk()
