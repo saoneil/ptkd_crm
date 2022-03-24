@@ -1,0 +1,25 @@
+CREATE DEFINER=`root`@`localhost` PROCEDURE `ptkd_payments_in_arrears`()
+BEGIN
+
+select
+student_id,
+first_name,
+last_name,
+email1,
+email2,
+payment_good_till,
+pay_rate,
+comment
+
+from
+ptkd_students
+
+where
+active = 1
+and payment_good_till < curdate()
+
+order by
+payment_good_till asc
+
+;
+END

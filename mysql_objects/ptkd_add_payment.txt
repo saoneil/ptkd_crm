@@ -1,0 +1,19 @@
+CREATE DEFINER=`root`@`localhost` PROCEDURE `ptkd_add_payment`(
+in in_id int,
+in in_goodtill date,
+in in_payrate int)
+BEGIN
+
+SET SQL_SAFE_UPDATES = 0;
+
+update ptkd_students
+set
+payment_good_till = in_goodtill,
+pay_rate = in_payrate
+where
+student_id = in_id
+
+
+
+;
+END

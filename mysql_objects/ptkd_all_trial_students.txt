@@ -1,0 +1,24 @@
+CREATE DEFINER=`root`@`localhost` PROCEDURE `ptkd_all_trial_students`()
+BEGIN
+
+select
+student_id,
+first_name,
+last_name,
+active,
+email1,
+trial_student,
+comment
+
+from
+ptkd_students
+
+where
+active = 1
+and trial_student = 1
+
+order by
+last_name asc
+
+;
+END

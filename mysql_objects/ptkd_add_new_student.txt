@@ -1,0 +1,35 @@
+CREATE DEFINER=`root`@`localhost` PROCEDURE `ptkd_add_new_student`(
+in in_first_name varchar(50),
+in in_last_name varchar(50),
+in in_email1 varchar(100),
+in in_phone1 varchar(50),
+in in_dob date)
+BEGIN
+
+SET SQL_SAFE_UPDATES = 0;
+
+insert into ptkd_students
+values
+(
+null,
+in_first_name,
+in_last_name,
+1, #active
+in_email1,
+null, #email2
+null, #email3
+in_phone1,
+null, #phone2
+null, #payment_good_till
+0, #pay_rate
+null, #comment
+curdate(), #start_date
+in_dob,
+1, #trial_student
+"White Belt",
+10, #gup/dan
+null, null, null, null, null, null, null, null, null, null, null, null, null #testing dates
+)
+
+;
+END

@@ -1,0 +1,17 @@
+CREATE DEFINER=`root`@`localhost` PROCEDURE `ptkd_make_student_active_inactive`(IN in_studentid int)
+BEGIN
+
+declare var_active int;
+select active from ptkd_students where student_id = in_studentid
+into var_active;
+
+update ptkd_students
+set active = 
+case
+	when var_active = 1 then 0
+    when var_active = 0 then 1
+end
+where student_id = in_studentid
+
+;
+END

@@ -1,0 +1,25 @@
+CREATE DEFINER=`root`@`localhost` PROCEDURE `ptkd_all_active_emails`()
+BEGIN
+
+select
+email1
+from ptkd_students
+where active = 1
+and email1 is not null
+
+union all
+select
+email2
+from ptkd_students
+where active = 1
+and email2 is not null
+
+union all
+select
+email3
+from ptkd_students
+where active = 1
+and email3 is not null
+
+;
+END

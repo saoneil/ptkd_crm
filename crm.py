@@ -8,7 +8,7 @@ import mysql.connector
 import imaplib
 import time
 import email.message
-from mail_reader import print_sample
+from mail_reader import mail_reader_func
 
 
 window_width = 1000
@@ -529,19 +529,81 @@ class MainApplication(tk.Frame):
 
 
 
-        ############      #        #######        #######
-             #           # #       #      #      #       #
+        ############      #        #######         ######
+             #           # #       #      #       #      #
              #          #   #      #      #            # 
-             #         #######     #   ###         # 
+             #         # ### #     #  ####         # 
              #        #       #    #      #       #      #
              #       #         #   #  #####       #######
+        
 
 
-        string_var = print_sample()
-        print(string_var)
-        total_fees_label = ttk.Label(tab2, text="test text").grid(row=1, column=1, sticky=W, pady=(5,5), padx=(15,5))      
-        total_gear = ttk.Label(tab2, text="test text").grid(row=2, column=1, sticky=W, pady=(5,5), padx=(15,5))    
-        total_testing_other = ttk.Label(tab2, text="test text").grid(row=3, column=1, sticky=W, pady=(5,5), padx=(15,5))  
+        #################
+        ### SECTION 1 ###
+        #################
+        quotes = "\""
+        def get_report():
+            mail_reader_string_start = str(period_entry_start.get())
+            mail_reader_string_end = str(period_entry_end.get())
+            datestring = ''
+            if mail_reader_string_end == '':
+                datestring_mail = 'ALL SINCE "' + mail_reader_string_start + '"'
+                return_string = mail_reader_func(datestring_mail, '')
+                result_string.set(return_string)
+                print(return_string)
+
+
+            period_entry_start.delete(0, END)
+            period_entry_end.delete(0, END)
+
+
+
+        desc_label = ttk.Label(tab2, text = "Type a time period below and click \"Get Report\" for a summary \nof the received tuition fees, gear expenditure and credits/other.")
+        desc_label.grid(row=1, column=1, padx=(15,45), pady=(30,10))
+
+        prompt_label_start = ttk.Label(tab2, text= "Enter the time period (e.g. 1-Jan-2022)  ||  Start: ")
+        prompt_label_start.grid(row=2, column=1, padx=(15,15), pady=(10,10), sticky='W')
+
+        prompt_label_end = ttk.Label(tab2, text= "End: ")
+        prompt_label_end.grid(row=3, column=1, padx=(237,15), pady=(10,10), sticky='W')
+
+        period_entry_start = ttk.Entry(tab2, width=15)
+        period_entry_start.grid(row=2, column=1, padx=(225,0))
+        period_entry_start.insert(0, '1-Jan-2022')
+
+        period_entry_end = ttk.Entry(tab2, width=15)
+        period_entry_end.grid(row=3, column=1, padx=(225,0))
+        period_entry_end.insert(0, '')
+
+        total_fees_button = ttk.Button(tab2, text="Get Report", command = get_report)
+        total_fees_button.grid(row=4, column=1, padx=(15,15), pady=(15,15), sticky='W')
+
+        result_string = StringVar()
+        result_string.set("Total Fees w/ Receipts: \nTotal Gear Fees w/ Receipts: \nTotal Testing/Credits Collected:")
+        result_label = ttk.Label(tab2, textvariable=result_string, font = 'Verdana 10 bold')
+        result_label.grid(row=5, column=1, padx=(15,15), pady=(15,15), sticky='W')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":

@@ -1,0 +1,33 @@
+CREATE DEFINER=`root`@`localhost` PROCEDURE `ptkd_testing_list`()
+BEGIN
+
+select
+student_id,
+first_name,
+last_name,
+current_rank,
+gup_dan,
+start_date,
+yellow_stripe_testdate,
+yellow_belt_testdate,
+green_stripe_testdate,
+green_belt_testdate,
+blue_stripe_testdate,
+blue_belt_testdate,
+red_stripe_testdate,
+red_belt_testdate,
+black_stripe_testdate,
+1st_dan_testdate
+
+
+from ptkd_students
+
+
+where active = 1
+
+
+order by
+gup_dan desc
+
+;
+END

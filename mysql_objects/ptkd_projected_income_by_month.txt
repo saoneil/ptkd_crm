@@ -1,0 +1,707 @@
+CREATE DEFINER=`root`@`localhost` PROCEDURE `ptkd_projected_income_by_month`()
+BEGIN
+
+declare var_month_m3_45 decimal(8,2);
+declare var_month_m3_55 decimal(8,2);
+declare var_month_m2_45 decimal(8,2);
+declare var_month_m2_55 decimal(8,2);
+declare var_month_m1_45 decimal(8,2);
+declare var_month_m1_55 decimal(8,2);
+declare var_month0_45 decimal(8,2);
+declare var_month0_55 decimal(8,2);
+declare var_month1_45 decimal(8,2);
+declare var_month1_55 decimal(8,2);
+declare var_month2_45 decimal(8,2);
+declare var_month2_55 decimal(8,2);
+declare var_month3_45 decimal(8,2);
+declare var_month3_55 decimal(8,2);
+declare var_month4_45 decimal(8,2);
+declare var_month4_55 decimal(8,2);
+declare var_month5_45 decimal(8,2);
+declare var_month5_55 decimal(8,2);
+declare var_month6_45 decimal(8,2);
+declare var_month6_55 decimal(8,2);
+declare var_month7_45 decimal(8,2);
+declare var_month7_55 decimal(8,2);
+declare var_month8_45 decimal(8,2);
+declare var_month8_55 decimal(8,2);
+declare var_month9_45 decimal(8,2);
+declare var_month9_55 decimal(8,2);
+declare var_month10_45 decimal(8,2);
+declare var_month10_55 decimal(8,2);
+declare var_month11_45 decimal(8,2);
+declare var_month11_55 decimal(8,2);
+
+declare var_curdate date;
+declare var_curmonth int;
+declare var_curyear int;
+set var_curdate = curdate();
+set var_curmonth = month(var_curdate);
+set var_curyear = month(var_curdate);
+
+SET SQL_SAFE_UPDATES = 0;
+## delete the temp table to clear out all stale data
+truncate ptkd_projected_income_by_month_temptable;
+
+## inserts into temp table with data by pay rate, payment_good_till date, and summed "amount" field
+insert into ptkd_projected_income_by_month_temptable
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_sub(var_curdate, interval 3 month)) as "date_month",
+year(date_sub(var_curdate, interval 3 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_sub(var_curdate, interval 3 month))
+and year(payment_good_till) = year(date_sub(var_curdate, interval 3 month))
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_sub(var_curdate, interval 2 month)) as "date_month",
+year(date_sub(var_curdate, interval 2 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_sub(var_curdate, interval 2 month))
+and year(payment_good_till) = year(date_sub(var_curdate, interval 2 month))
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_sub(var_curdate, interval 1 month)) as "date_month",
+year(date_sub(var_curdate, interval 1 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_sub(var_curdate, interval 1 month))
+and year(payment_good_till) = year(date_sub(var_curdate, interval 1 month))
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(var_curdate) as "date_month",
+year(var_curdate) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(var_curdate)
+and year(payment_good_till) = year(var_curdate)
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_add(var_curdate, interval 1 month)) as "date_month",
+year(date_add(var_curdate, interval 1 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_add(var_curdate, interval 1 month))
+and year(payment_good_till) = year(date_add(var_curdate, interval 1 month))
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_add(var_curdate, interval 2 month)) as "date_month",
+year(date_add(var_curdate, interval 2 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_add(var_curdate, interval 2 month))
+and year(payment_good_till) = year(date_add(var_curdate, interval 2 month))
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_add(var_curdate, interval 3 month)) as "date_month",
+year(date_add(var_curdate, interval 3 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_add(var_curdate, interval 3 month))
+and year(payment_good_till) = year(date_add(var_curdate, interval 3 month))
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_add(var_curdate, interval 4 month)) as "date_month",
+year(date_add(var_curdate, interval 4 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_add(var_curdate, interval 4 month))
+and year(payment_good_till) = year(date_add(var_curdate, interval 4 month))
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_add(var_curdate, interval 5 month)) as "date_month",
+year(date_add(var_curdate, interval 5 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_add(var_curdate, interval 5 month))
+and year(payment_good_till) = year(date_add(var_curdate, interval 5 month))
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_add(var_curdate, interval 6 month)) as "date_month",
+year(date_add(var_curdate, interval 6 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_add(var_curdate, interval 6 month))
+and year(payment_good_till) = year(date_add(var_curdate, interval 6 month))
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_add(var_curdate, interval 7 month)) as "date_month",
+year(date_add(var_curdate, interval 7 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_add(var_curdate, interval 7 month))
+and year(payment_good_till) = year(date_add(var_curdate, interval 7 month))
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_add(var_curdate, interval 8 month)) as "date_month",
+year(date_add(var_curdate, interval 8 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_add(var_curdate, interval 8 month))
+and year(payment_good_till) = year(date_add(var_curdate, interval 8 month))
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_add(var_curdate, interval 9 month)) as "date_month",
+year(date_add(var_curdate, interval 9 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_add(var_curdate, interval 9 month))
+and year(payment_good_till) = year(date_add(var_curdate, interval 9 month))
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_add(var_curdate, interval 10 month)) as "date_month",
+year(date_add(var_curdate, interval 10 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_add(var_curdate, interval 10 month))
+and year(payment_good_till) = year(date_add(var_curdate, interval 10 month))
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_add(var_curdate, interval 11 month)) as "date_month",
+year(date_add(var_curdate, interval 11 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_add(var_curdate, interval 11 month))
+and year(payment_good_till) = year(date_add(var_curdate, interval 11 month))
+group by pay_rate, payment_good_till
+
+union all
+
+select
+count(*) as "count",
+sum(pay_rate) as "sum",
+pay_rate,
+payment_good_till,
+month(date_add(var_curdate, interval 12 month)) as "date_month",
+year(date_add(var_curdate, interval 12 month)) as "date_year"
+from ptkd_students
+where
+active = 1
+and month(payment_good_till) = month(date_add(var_curdate, interval 12 month))
+and year(payment_good_till) = year(date_add(var_curdate, interval 12 month))
+group by pay_rate, payment_good_till
+
+## orders main table, on aggregate of the entire temp table
+order by date_year, date_month;
+
+
+
+## get rid of all the pay_rate = 0 rows (mostly trial students)
+delete from ptkd_projected_income_by_month_temptable
+where pay_rate = 0;
+
+## pull from temp table and insert into variables to be called later
+## -3 offset
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_sub(var_curdate, interval 3 month))
+and date_year = year(date_sub(var_curdate, interval 3 month))
+and pay_rate = 45
+into var_month_m3_45 ;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_sub(var_curdate, interval 3 month))
+and date_year = year(date_sub(var_curdate, interval 3 month))
+and pay_rate = 55
+into var_month_m3_55 ;
+
+## -2 offset
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_sub(var_curdate, interval 2 month))
+and date_year = year(date_sub(var_curdate, interval 2 month))
+and pay_rate = 45
+into var_month_m2_45 ;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_sub(var_curdate, interval 2 month))
+and date_year = year(date_sub(var_curdate, interval 2 month))
+and pay_rate = 55
+into var_month_m2_55 ;
+
+## current month calculation (previous)
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_sub(var_curdate, interval 1 month))
+and date_year = year(date_sub(var_curdate, interval 1 month))
+and pay_rate = 45
+into var_month_m1_45;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_sub(var_curdate, interval 1 month))
+and date_year = year(date_sub(var_curdate, interval 1 month))
+and pay_rate = 55
+into var_month_m1_55;
+
+## current month calculation (actual)
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(var_curdate)
+and date_year = year(var_curdate)
+and pay_rate = 45
+into var_month0_45;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(var_curdate)
+and date_year = year(var_curdate)
+and pay_rate = 55
+into var_month0_55;
+
+## +1 offset
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 1 month))
+and date_year = year(date_add(var_curdate, interval 1 month))
+and pay_rate = 45
+into var_month1_45 ;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 1 month))
+and date_year = year(date_add(var_curdate, interval 1 month))
+and pay_rate = 55
+into var_month1_55 ;
+
+## +2 offset
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 2 month))
+and date_year = year(date_add(var_curdate, interval 2 month))
+and pay_rate = 45
+into var_month2_45 ;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 2 month))
+and date_year = year(date_add(var_curdate, interval 2 month))
+and pay_rate = 55
+into var_month2_55 ;
+
+## +3 offset
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 3 month))
+and date_year = year(date_add(var_curdate, interval 3 month))
+and pay_rate = 45
+into var_month3_45 ;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 3 month))
+and date_year = year(date_add(var_curdate, interval 3 month))
+and pay_rate = 55
+into var_month3_55 ;
+
+## +4 offset
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 4 month))
+and date_year = year(date_add(var_curdate, interval 4 month))
+and pay_rate = 45
+into var_month4_45 ;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 4 month))
+and date_year = year(date_add(var_curdate, interval 4 month))
+and pay_rate = 55
+into var_month4_55 ;
+
+## +5 offset
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 5 month))
+and date_year = year(date_add(var_curdate, interval 5 month))
+and pay_rate = 45
+into var_month5_45 ;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 5 month))
+and date_year = year(date_add(var_curdate, interval 5 month))
+and pay_rate = 55
+into var_month5_55 ;
+
+## +6 offset
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 6 month))
+and date_year = year(date_add(var_curdate, interval 6 month))
+and pay_rate = 45
+into var_month6_45 ;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 6 month))
+and date_year = year(date_add(var_curdate, interval 6 month))
+and pay_rate = 55
+into var_month6_55 ;
+
+## +7 offset
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 7 month))
+and date_year = year(date_add(var_curdate, interval 7 month))
+and pay_rate = 45
+into var_month7_45 ;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 7 month))
+and date_year = year(date_add(var_curdate, interval 7 month))
+and pay_rate = 55
+into var_month7_55 ;
+
+## +8 offset
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 8 month))
+and date_year = year(date_add(var_curdate, interval 8 month))
+and pay_rate = 45
+into var_month8_45 ;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 8 month))
+and date_year = year(date_add(var_curdate, interval 8 month))
+and pay_rate = 55
+into var_month8_55 ;
+
+## +9 offset
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 9 month))
+and date_year = year(date_add(var_curdate, interval 9 month))
+and pay_rate = 45
+into var_month9_45 ;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 9 month))
+and date_year = year(date_add(var_curdate, interval 9 month))
+and pay_rate = 55
+into var_month9_55 ;
+
+## +10 offset
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 10 month))
+and date_year = year(date_add(var_curdate, interval 10 month))
+and pay_rate = 45
+into var_month10_45 ;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 10 month))
+and date_year = year(date_add(var_curdate, interval 10 month))
+and pay_rate = 55
+into var_month10_55 ;
+
+## +11 offset
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 11 month))
+and date_year = year(date_add(var_curdate, interval 11 month))
+and pay_rate = 45
+into var_month11_45 ;
+select
+sum(sum)
+from ptkd_projected_income_by_month_temptable
+where date_month = month(date_add(var_curdate, interval 11 month))
+and date_year = year(date_add(var_curdate, interval 11 month))
+and pay_rate = 55
+into var_month11_55 ;
+
+
+/*
+## prints out all the value - just to be used for analyzing if the logic is changed
+select 
+var_month_m3_45,
+var_month_m3_55
+union all
+select
+var_month_m2_45,
+var_month_m2_55
+union all
+select
+var_month_m1_45,
+var_month_m1_55
+union all
+select
+var_month0_45,
+var_month0_55
+union all
+select
+var_month1_45,
+var_month1_55
+union all
+select
+var_month2_45,
+var_month2_55
+union all
+select
+var_month3_45,
+var_month3_55
+union all
+select
+var_month4_45,
+var_month4_55
+union all
+select
+var_month5_45,
+var_month5_55
+union all
+select
+var_month6_45,
+var_month6_55
+union all
+select
+var_month7_45,
+var_month7_55
+union all
+select
+var_month8_45,
+var_month8_55
+union all
+select
+var_month9_45,
+var_month9_55
+union all
+select
+var_month10_45,
+var_month10_55
+union all
+select
+var_month11_45,
+var_month11_55
+union all
+select
+var_month12_45,
+var_month12_55
+*/
+
+set var_month_m3_45 = coalesce(var_month_m3_45, 0);
+set var_month_m3_55 = coalesce(var_month_m3_55, 0);
+set var_month_m2_45 = coalesce(var_month_m2_45, 0);
+set var_month_m2_55 = coalesce(var_month_m2_55, 0);
+set var_month_m1_45 = coalesce(var_month_m1_45, 0);
+set var_month_m1_55 = coalesce(var_month_m1_55, 0);
+set var_month0_45 = coalesce(var_month0_45, 0);
+set var_month0_55 = coalesce(var_month0_55, 0);
+set var_month1_45 = coalesce(var_month1_45, 0);
+set var_month1_55 = coalesce(var_month1_55, 0);
+set var_month2_45 = coalesce(var_month2_45, 0);
+set var_month2_55 = coalesce(var_month2_55, 0);
+set var_month3_45 = coalesce(var_month3_45, 0);
+set var_month3_55 = coalesce(var_month3_55, 0);
+set var_month4_45 = coalesce(var_month4_45, 0);
+set var_month4_55 = coalesce(var_month4_55, 0);
+set var_month5_45 = coalesce(var_month5_45, 0);
+set var_month5_55 = coalesce(var_month5_55, 0);
+set var_month6_45 = coalesce(var_month6_45, 0);
+set var_month6_55 = coalesce(var_month6_55, 0);
+set var_month7_45 = coalesce(var_month7_45, 0);
+set var_month7_55 = coalesce(var_month7_55, 0);
+set var_month8_45 = coalesce(var_month8_45, 0);
+set var_month8_55 = coalesce(var_month8_55, 0);
+set var_month9_45 = coalesce(var_month9_45, 0);
+set var_month9_55 = coalesce(var_month9_55, 0);
+set var_month10_45 = coalesce(var_month10_45, 0);
+set var_month10_55 = coalesce(var_month10_55, 0);
+set var_month11_45 = coalesce(var_month11_45, 0);
+set var_month11_55 = coalesce(var_month11_55, 0);
+
+select 
+concat(month(var_curdate), '-', year(var_curdate)) as "Period",
+3*(var_month_m3_45+var_month_m3_55) + 2*(var_month_m2_45+var_month_m2_55) + 1*(var_month_m1_45+var_month_m1_55) as "Total Left To Receive as of Period"
+union all
+select 
+concat(month(date_add(var_curdate, interval 1 month)), '-', year(date_add(var_curdate, interval 1 month))) as "Period",
+4*(var_month_m3_45+var_month_m3_55) + 3*(var_month_m2_45+var_month_m2_55) + 2*(var_month_m1_45+var_month_m1_55) + 1*(var_month0_45+var_month0_55) as "Total Left To Receive as of Period"
+union all
+select 
+concat(month(date_add(var_curdate, interval 2 month)), '-', year(date_add(var_curdate, interval 2 month))) as "Period",
+5*(var_month_m3_45+var_month_m3_55) + 4*(var_month_m2_45+var_month_m2_55) + 3*(var_month_m1_45+var_month_m1_55) + 2*(var_month0_45+var_month0_55) + 1*(var_month1_45+var_month1_55) as "Total Left To Receive as of Period"
+union all
+select 
+concat(month(date_add(var_curdate, interval 3 month)), '-', year(date_add(var_curdate, interval 3 month))) as "Period",
+6*(var_month_m3_45+var_month_m3_55) + 5*(var_month_m2_45+var_month_m2_55) + 4*(var_month_m1_45+var_month_m1_55) + 3*(var_month0_45+var_month0_55) + 2*(var_month1_45+var_month1_55) + 1*(var_month2_45+var_month2_55) as "Total Left To Receive as of Period"
+union all
+select 
+concat(month(date_add(var_curdate, interval 4 month)), '-', year(date_add(var_curdate, interval 4 month))) as "Period",
+7*(var_month_m3_45+var_month_m3_55) + 6*(var_month_m2_45+var_month_m2_55) + 5*(var_month_m1_45+var_month_m1_55) + 4*(var_month0_45+var_month0_55) + 3*(var_month1_45+var_month1_55) + 2*(var_month2_45+var_month2_55) + 1*(var_month3_45+var_month3_55) as "Total Left To Receive as of Period"
+union all
+select 
+concat(month(date_add(var_curdate, interval 5 month)), '-', year(date_add(var_curdate, interval 5 month))) as "Period",
+8*(var_month_m3_45+var_month_m3_55) + 7*(var_month_m2_45+var_month_m2_55) + 6*(var_month_m1_45+var_month_m1_55) + 5*(var_month0_45+var_month0_55) + 4*(var_month1_45+var_month1_55) + 3*(var_month2_45+var_month2_55) + 2*(var_month3_45+var_month3_55) + 1*(var_month4_45+var_month4_55) as "Total Left To Receive as of Period"
+union all
+select 
+concat(month(date_add(var_curdate, interval 6 month)), '-', year(date_add(var_curdate, interval 6 month))) as "Period",
+9*(var_month_m3_45+var_month_m3_55) + 8*(var_month_m2_45+var_month_m2_55) + 7*(var_month_m1_45+var_month_m1_55) + 6*(var_month0_45+var_month0_55) + 5*(var_month1_45+var_month1_55) + 4*(var_month2_45+var_month2_55) + 3*(var_month3_45+var_month3_55) + 2*(var_month4_45+var_month4_55) + 1*(var_month5_45+var_month5_55) as "Total Left To Receive as of Period"
+union all
+select 
+concat(month(date_add(var_curdate, interval 7 month)), '-', year(date_add(var_curdate, interval 7 month))) as "Period",
+10*(var_month_m3_45+var_month_m3_55) + 9*(var_month_m2_45+var_month_m2_55) + 8*(var_month_m1_45+var_month_m1_55) + 7*(var_month0_45+var_month0_55) + 6*(var_month1_45+var_month1_55) + 5*(var_month2_45+var_month2_55) + 4*(var_month3_45+var_month3_55) + 3*(var_month4_45+var_month4_55) + 2*(var_month5_45+var_month5_55) + 1*(var_month6_45+var_month6_55) as "Total Left To Receive as of Period"
+union all
+select 
+concat(month(date_add(var_curdate, interval 8 month)), '-', year(date_add(var_curdate, interval 8 month))) as "Period",
+11*(var_month_m3_45+var_month_m3_55) + 10*(var_month_m2_45+var_month_m2_55) + 9*(var_month_m1_45+var_month_m1_55) + 8*(var_month0_45+var_month0_55) + 7*(var_month1_45+var_month1_55) + 6*(var_month2_45+var_month2_55) + 5*(var_month3_45+var_month3_55) + 4*(var_month4_45+var_month4_55) + 3*(var_month5_45+var_month5_55) + 2*(var_month6_45+var_month6_55) + 1*(var_month7_45+var_month7_55) as "Total Left To Receive as of Period"
+union all
+select 
+concat(month(date_add(var_curdate, interval 9 month)), '-', year(date_add(var_curdate, interval 9 month))) as "Period",
+12*(var_month_m3_45+var_month_m3_55) + 11*(var_month_m2_45+var_month_m2_55) + 10*(var_month_m1_45+var_month_m1_55) + 9*(var_month0_45+var_month0_55) + 8*(var_month1_45+var_month1_55) + 7*(var_month2_45+var_month2_55) + 6*(var_month3_45+var_month3_55) + 5*(var_month4_45+var_month4_55) + 4*(var_month5_45+var_month5_55) + 3*(var_month6_45+var_month6_55) + 2*(var_month7_45+var_month7_55) + 1*(var_month8_45+var_month8_55) as "Total Left To Receive as of Period"
+union all
+select 
+concat(month(date_add(var_curdate, interval 10 month)), '-', year(date_add(var_curdate, interval 10 month))) as "Period",
+13*(var_month_m3_45+var_month_m3_55) + 12*(var_month_m2_45+var_month_m2_55) + 11*(var_month_m1_45+var_month_m1_55) + 10*(var_month0_45+var_month0_55) + 9*(var_month1_45+var_month1_55) + 8*(var_month2_45+var_month2_55) + 7*(var_month3_45+var_month3_55) + 6*(var_month4_45+var_month4_55) + 5*(var_month5_45+var_month5_55) + 4*(var_month6_45+var_month6_55) + 3*(var_month7_45+var_month7_55) + 2*(var_month8_45+var_month8_55 ) + 1*(var_month9_45+var_month9_55) as "Total Left To Receive as of Period"
+union all
+select 
+concat(month(date_add(var_curdate, interval 11 month)), '-', year(date_add(var_curdate, interval 11 month))) as "Period",
+14*(var_month_m3_45+var_month_m3_55) + 13*(var_month_m2_45+var_month_m2_55) + 12*(var_month_m1_45+var_month_m1_55) + 11*(var_month0_45+var_month0_55) + 10*(var_month1_45+var_month1_55) + 9*(var_month2_45+var_month2_55) + 8*(var_month3_45+var_month3_55) + 7*(var_month4_45+var_month4_55) + 6*(var_month5_45+var_month5_55) + 5*(var_month6_45+var_month6_55) + 4*(var_month7_45+var_month7_55) + 3*(var_month8_45+var_month8_55 ) + 2*(var_month9_45+var_month9_55) + 1*(var_month10_45+var_month10_55) as "Total Left To Receive as of Period"
+union all
+select 
+concat(month(date_add(var_curdate, interval 12 month)), '-', year(date_add(var_curdate, interval 12 month))) as "Period",
+15*(var_month_m3_45+var_month_m3_55) + 14*(var_month_m2_45+var_month_m2_55) + 13*(var_month_m1_45+var_month_m1_55) + 12*(var_month0_45+var_month0_55) + 11*(var_month1_45+var_month1_55) + 10*(var_month2_45+var_month2_55) + 9*(var_month3_45+var_month3_55) + 8*(var_month4_45+var_month4_55) + 7*(var_month5_45+var_month5_55) + 6*(var_month6_45+var_month6_55) + 5*(var_month7_45+var_month7_55) + 4*(var_month8_45+var_month8_55 ) + 3*(var_month9_45+var_month9_55) + 2*(var_month10_45+var_month10_55) + 1*(var_month11_45+var_month11_55) as "Total Left To Receive as of Period"
+;
+
+
+
+
+END

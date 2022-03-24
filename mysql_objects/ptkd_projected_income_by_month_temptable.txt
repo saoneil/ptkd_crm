@@ -1,0 +1,8 @@
+CREATE TABLE `ptkd_projected_income_by_month_temptable` (
+  `count` int DEFAULT NULL,
+  `sum` decimal(8,2) DEFAULT '0.00',
+  `pay_rate` int DEFAULT NULL,
+  `payment_good_till` date DEFAULT NULL,
+  `date_month` int DEFAULT NULL,
+  `date_year` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
