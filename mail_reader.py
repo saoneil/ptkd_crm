@@ -9,8 +9,8 @@ datestring_end = ''
 # datestring_end = 'BEFORE "31-Dec-2021"'
 def mail_reader_func(datestring_start, datestring_end):
     host = "imap-mail.outlook.com"
-    username = "saoneil@live.com"
-    password = "BootsAlmighty"
+    username = "<user>"
+    password = "<pass>"
 
     mail = imaplib.IMAP4_SSL(host)
     mail.login(username, password)
