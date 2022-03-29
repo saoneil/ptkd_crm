@@ -66,6 +66,7 @@ class MainApplication(tk.Frame):
         dblabel = tk.Label(tab1, text="db status")
         dblabel.place(x=135, y=215)
         self.dblabel_counter = 1
+        self.mailsearch_counter = 1
         
         #################
         ### Functions ###
@@ -76,6 +77,9 @@ class MainApplication(tk.Frame):
         def refresh_status_saved():
             dblabel.configure(text="db saved ["+ str(self.dblabel_counter) +"]")
             self.dblabel_counter += 1
+        def refresh_search_saved():
+            mailsearch_label.configure(text="search counter [" + str(self.mailsearch_counter) + "]")
+            self.mailsearch_counter += 1
         def save_ptkd_students_db():
             cnxn = get_connection_pyodbc()
             cursor = cnxn.cursor()
@@ -533,7 +537,7 @@ class MainApplication(tk.Frame):
              #           # #       #      #       #      #
              #          #   #      #      #            # 
              #         # ### #     #  ####         # 
-             #        #       #    #      #       #      #
+             #        #       #    #      #       #      
              #       #         #   #  #####       #######
         
 
@@ -550,12 +554,12 @@ class MainApplication(tk.Frame):
                 datestring_mail = 'ALL SINCE "' + mail_reader_string_start + '"'
                 return_string = mail_reader_func(datestring_mail, '')
                 result_string.set(return_string)
-                print(return_string)
+                #print(return_string)
 
 
             period_entry_start.delete(0, END)
             period_entry_end.delete(0, END)
-
+            refresh_search_saved()
 
 
         desc_label = ttk.Label(tab2, text = "Type a time period below and click \"Get Report\" for a summary \nof the received tuition fees, gear expenditure and credits/other.")
@@ -583,7 +587,8 @@ class MainApplication(tk.Frame):
         result_label = ttk.Label(tab2, textvariable=result_string, font = 'Verdana 10 bold')
         result_label.grid(row=5, column=1, padx=(15,15), pady=(15,15), sticky='W')
 
-
+        mailsearch_label = tk.Label(tab2, text="search counter:")
+        mailsearch_label.place(x=95, y=165)
 
 
 
