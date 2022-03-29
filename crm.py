@@ -9,6 +9,7 @@ import imaplib
 import time
 import email.message
 from mail_reader import mail_reader_func
+import os
 
 
 window_width = 1000
@@ -17,10 +18,6 @@ window_height = 750
 treeplacex = 220
 treeplacey = 5
 
-host = "imap-mail.outlook.com"
-username = "saoneil@live.com"
-password = "BootsAlmighty"
-
 def get_connection_connector():
     conn = mysql.connector.connect(
         host="localhost",
@@ -28,11 +25,23 @@ def get_connection_connector():
         password="BootsAlmighty",
         database="ptkd_students")
     return conn
+
+# def get_connection_pyodbc():
+#     cnxn = pyodbc.connect(
+#         'DRIVER={MySQL ODBC 8.0 ANSI Driver};'
+#         'UID=root;Password=BootsAlmighty;'
+#         'Server=localhost;Database=ptkd_students;'
+#         'Port=3306;String Types=Unicode')
+#     return cnxn
+
 def get_connection_pyodbc():
-    cnxn = pyodbc.connect('DRIVER={MySQL ODBC 8.0 ANSI Driver};'
-                      'UID=root;Password=BootsAlmighty;'
-                      'Server=localhost;Database=ptkd_students;'
-                      'Port=3306;String Types=Unicode')
+    cnxn = pyodbc.connect(
+        DRIVER=os.environ.get('mysql_driver_python'),
+        UID=os.environ.get('mysql_user'),
+        Password=os.environ.get('mysql_pass'),
+        Server=os.environ.get('mysql_host'),
+        Database='ptkd_students',
+        Port='3306')
     return cnxn
 
 class MainApplication(tk.Frame):
@@ -570,7 +579,9 @@ class MainApplication(tk.Frame):
 
 
             period_entry_start.delete(0, END)
+            period_entry_start.insert(0, '1-Jan-2022')
             period_entry_end.delete(0, END)
+
             refresh_search_saved()
 
 

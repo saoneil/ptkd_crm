@@ -1,5 +1,6 @@
 import imaplib
 import email
+import os
 
 #https://www.youtube.com/watch?v=6DD4IOHhNYo
 
@@ -8,9 +9,9 @@ datestring_end = ''
 # datestring_start = 'ALL SINCE "1-Jan-2022"'
 # datestring_end = 'BEFORE "31-Dec-2021"'
 def mail_reader_func(datestring_start, datestring_end):
-    host = "imap-mail.outlook.com"
-    username = "<user>"
-    password = "<pass>"
+    host = os.environ.get('email_host_python')
+    username = os.environ.get('email_username')
+    password = os.environ.get('email_password')
 
     mail = imaplib.IMAP4_SSL(host)
     mail.login(username, password)
