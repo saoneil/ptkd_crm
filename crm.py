@@ -569,7 +569,7 @@ class MainApplication(tk.Frame):
         prompt_label_start.grid(row=2, column=1, padx=(15,15), pady=(10,10), sticky='W')
 
         prompt_label_end = ttk.Label(tab2, text= "End: ")
-        prompt_label_end.grid(row=3, column=1, padx=(237,15), pady=(10,10), sticky='W')
+        prompt_label_end.grid(row=3, column=1, padx=(237,15), pady=(10,10), sticky='N')
 
         period_entry_start = ttk.Entry(tab2, width=15)
         period_entry_start.grid(row=2, column=1, padx=(225,0))
