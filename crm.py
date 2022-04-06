@@ -11,6 +11,9 @@ import email.message
 from mail_reader import mail_reader_func
 import os
 
+host = os.environ.get('email_host_python')
+username = os.environ.get('email_username')
+password = os.environ.get('email_password')
 
 window_width = 1000
 window_height = 750
@@ -20,19 +23,11 @@ treeplacey = 5
 
 def get_connection_connector():
     conn = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="BootsAlmighty",
+        host=os.environ.get('mysql_host'),
+        user=os.environ.get('mysql_user'),
+        password=os.environ.get('mysql_pass'),
         database="ptkd_students")
     return conn
-
-# def get_connection_pyodbc():
-#     cnxn = pyodbc.connect(
-#         'DRIVER={MySQL ODBC 8.0 ANSI Driver};'
-#         'UID=root;Password=BootsAlmighty;'
-#         'Server=localhost;Database=ptkd_students;'
-#         'Port=3306;String Types=Unicode')
-#     return cnxn
 
 def get_connection_pyodbc():
     cnxn = pyodbc.connect(
