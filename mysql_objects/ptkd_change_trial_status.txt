@@ -1,0 +1,18 @@
+CREATE DEFINER=`root`@`localhost` PROCEDURE `ptkd_change_trial_status`(IN in_studentid int)
+BEGIN
+
+declare var_trial int;
+select trial_student from ptkd_students where student_id = in_studentid
+into var_trial;
+
+update ptkd_students
+set trial_student = 
+case
+	when var_trial = 1 then 0
+    when var_trial = 0 then 1
+end
+where student_id = in_studentid
+
+;
+
+END

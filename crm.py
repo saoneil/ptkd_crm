@@ -28,7 +28,6 @@ def get_connection_connector():
         password=os.environ.get('mysql_pass'),
         database="ptkd_students")
     return conn
-
 def get_connection_pyodbc():
     cnxn = pyodbc.connect(
         DRIVER=os.environ.get('mysql_driver_python'),
@@ -450,6 +449,24 @@ class MainApplication(tk.Frame):
             section4_entry2.delete(0, END)
             section4_entry3.delete(0, END)
             section4_entry4.delete(0, END)
+        def change_trial_status():
+            studentid_1 = section5_entry1.get()
+            studentid_2 = section5_entry2.get()
+            studentid_3 = section5_entry3.get()
+            studentid_4 = section5_entry4.get()
+            id_list = [studentid_1, studentid_2, studentid_3, studentid_4]
+            conn = get_connection_connector()
+            cursor = conn.cursor()
+            for i in range(id_list.index('')):
+                sqlstring = "ptkd_change_trial_status"
+                params_seq = (id_list[i],)
+                cursor.callproc(sqlstring, params_seq)
+            conn.commit()
+            cursor.close()
+            section5_entry1.delete(0, END)
+            section5_entry2.delete(0, END)
+            section5_entry3.delete(0, END)
+            section5_entry4.delete(0, END)
 
 
         #################
@@ -508,7 +525,7 @@ class MainApplication(tk.Frame):
         section3_label4 = ttk.Label(tab1, text="          Total:").grid(row=17, column=2, sticky=W, pady=(0,5), padx=(15,5))
         section3_label5 = ttk.Label(tab1, text="Date Range:").grid(row=18, column=2, sticky=W, pady=(0,5), padx=(15,5))
 
-        section3_button1.grid(row=10, column=2, sticky=E, pady=(150,15), padx=(50,50))
+        section3_button1.grid(row=10, column=2, sticky=E, pady=(150,15), padx=(30,50))
         section3_entry1 = ttk.Entry(tab1, width=8)
         section3_entry1.grid(row=11, column=2, sticky=W, padx=(80,50))
         section3_entry2 = ttk.Entry(tab1, width=8)
@@ -529,10 +546,10 @@ class MainApplication(tk.Frame):
         #################
         ### SECTION 4 ###
         #################
-        section4_button1 = ttk.Button(tab1, text="Make Student(s) Active/Inactive", command = make_active_inactive)
+        section4_button1 = ttk.Button(tab1, text="Make Active/Inactive", command = make_active_inactive)
         section4_label1 = ttk.Label(tab1, text="Student ID:").grid(row=11, column=3, sticky=W, pady=(0,5), padx=(15,5))
 
-        section4_button1.grid(row=10, column=3, sticky=E, pady=(150,15), padx=(50,50))
+        section4_button1.grid(row=10, column=3, sticky=E, pady=(150,15), padx=(15,50))
         section4_entry1 = ttk.Entry(tab1, width=8)
         section4_entry1.grid(row=11, column=3, sticky=W, padx=(80,50))
         section4_entry2 = ttk.Entry(tab1, width=8)
@@ -541,6 +558,22 @@ class MainApplication(tk.Frame):
         section4_entry3.grid(row=13, column=3, sticky=W, padx=(80,50))
         section4_entry4 = ttk.Entry(tab1, width=8)
         section4_entry4.grid(row=14, column=3, sticky=W, padx=(80,50))
+
+        #################
+        ### SECTION 5 ###
+        #################
+        section5_button1 = ttk.Button(tab1, text="Change Trial Status", command = change_trial_status)
+        section5_label1 = ttk.Label(tab1, text="Student ID:").grid(row=11, column=4, sticky=W, pady=(0,5), padx=(15,5))
+
+        section5_button1.grid(row=10, column=4, sticky=E, pady=(150,15), padx=(50,50))
+        section5_entry1 = ttk.Entry(tab1, width=8)
+        section5_entry1.grid(row=11, column=4, sticky=W, padx=(80,50))
+        section5_entry2 = ttk.Entry(tab1, width=8)
+        section5_entry2.grid(row=12, column=4, sticky=W, padx=(80,50))
+        section5_entry3 = ttk.Entry(tab1, width=8)
+        section5_entry3.grid(row=13, column=4, sticky=W, padx=(80,50))
+        section5_entry4 = ttk.Entry(tab1, width=8)
+        section5_entry4.grid(row=14, column=4, sticky=W, padx=(80,50))
     
 
 
