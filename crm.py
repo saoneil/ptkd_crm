@@ -642,7 +642,9 @@ class MainApplication(tk.Frame):
         mailsearch_label.place(x=95, y=165)
 
 
-
+        #################
+        ### SECTION 2 ###
+        #################
 
 
 
