@@ -51,15 +51,15 @@ class MainApplication(tk.Frame):
         nb.add(tab2, text='PTKD Financial Reporting')
         tab3 = ttk.Frame(nb)
         nb.add(tab3, text='Team NS')
-        
-        
+
+
         ############      #        #######          ###
              #           # #       #      #           #
-             #          #   #      #      #           # 
+             #          #   #      #      #           #
              #         #######     #   ###            #
              #        #       #    #      #           #
              #       #         #   #  #####         #####
-             
+
         row_label = tk.StringVar()
         time_label = tk.StringVar()
         row_label.set("# of records: " + str(0))
@@ -70,7 +70,7 @@ class MainApplication(tk.Frame):
         dblabel.place(x=135, y=215)
         self.dblabel_counter = 1
         self.mailsearch_counter = 1
-        
+
         #################
         ### Functions ###
         #################
@@ -89,14 +89,14 @@ class MainApplication(tk.Frame):
             sql_query = "SELECT * FROM ptkd_students.ptkd_students;"
             retval = pd.read_sql(sql_query, cnxn)
             retval.to_csv(r'C:\Users\saone\Documents\Python Stuff\prod\crm_files\db_backup.csv')
-            dblabel.after(1000, refresh_status_saved())           
+            dblabel.after(1000, refresh_status_saved())
         def view_all_active_students():
             cnxn = get_connection_pyodbc()
             cursor = cnxn.cursor()
             sql_query = "call ptkd_all_active_students();"
             retval = pd.read_sql(sql_query, cnxn)
             retval_rows = retval.to_numpy().tolist()
-            
+
             columns = ('student_id', 'first_name', 'last_name', 'payment_good_till' 'dob', 'current_rank', 'active', 'email1', 'trial_student', 'comment')
             tree = ttk.Treeview(tab1, columns=columns, show='headings', height = 20)
 
@@ -106,7 +106,7 @@ class MainApplication(tk.Frame):
             for column in list(retval.columns):
                 tree.heading(column, text=column)
                 tree.column(column, width=38, minwidth=70)
-            
+
             tree.heading('student_id', text="ID")
             tree.column('student_id', width=30, minwidth=30)
             tree.heading('first_name', text="first_name")
@@ -127,7 +127,7 @@ class MainApplication(tk.Frame):
             tree.column('trial_student', width=50, minwidth=75)
             tree.heading('comment', text="comment")
             tree.column('comment', width=50, minwidth=500)
-            
+
             for row in retval_rows:
                 tree.insert("", "end", values=row)
 
@@ -146,13 +146,13 @@ class MainApplication(tk.Frame):
             sql_query = "call ptkd_all_trial_students();"
             retval = pd.read_sql(sql_query, cnxn)
             retval_rows = retval.to_numpy().tolist()
-            
+
             columns = ('student_id', 'first_name', 'last_name', 'active', 'email1', 'trial_student')
             tree = ttk.Treeview(tab1, columns=columns, show='headings', height = 20)
 
             tree["column"] = list(retval.columns)
             tree["show"] =  "headings"
-            
+
             tree.heading('student_id', text="ID")
             tree.column('student_id', width=40, minwidth=40)
             tree.heading('first_name', text="first_name")
@@ -167,7 +167,7 @@ class MainApplication(tk.Frame):
             tree.column('trial_student', width=40, minwidth=40)
             tree.heading('comment', text="comment")
             tree.column('comment', width=250, minwidth=400)
-            
+
             for row in retval_rows:
                 tree.insert("", "end", values=row)
 
@@ -186,19 +186,19 @@ class MainApplication(tk.Frame):
             sql_query = "call ptkd_testing_list();"
             retval = pd.read_sql(sql_query, cnxn)
             retval_rows = retval.to_numpy().tolist()
-            
-            columns = ('student_id', 'first_name', 'last_name', 'current_rank', 'gup_dan', 
+
+            columns = ('student_id', 'first_name', 'last_name', 'current_rank', 'gup_dan',
                        'yellow_stripe_testdate', 'yellow_belt_testdate', 'green_stripe_testdate', 'green_belt_testdate', 'blue_stripe_testdate', 'blue_belt_testdate',
                        'red_stripe_testdate', 'red_belt_testdate', 'black_stripe_testdate', '1st_dan_testdate')
             tree = ttk.Treeview(tab1, columns=columns, show='headings', height = 20)
 
             tree["column"] = list(retval.columns)
             tree["show"] =  "headings"
-            
+
             for column in list(retval.columns):
                 tree.heading(column, text=column)
                 tree.column(column, width=38, minwidth=75)
-            
+
             tree.heading('yellow_stripe_testdate', text="YS")
             tree.heading('yellow_belt_testdate', text="YB")
             tree.heading('green_stripe_testdate', text="GS")
@@ -209,7 +209,7 @@ class MainApplication(tk.Frame):
             tree.heading('red_belt_testdate', text="RB")
             tree.heading('black_stripe_testdate', text="BKS")
             tree.heading('1st_dan_testdate', text="1st")
-            
+
             tree.heading('student_id', text="ID")
             tree.column('student_id', width=30, minwidth = 30)
             tree.heading('first_name', text="first_name")
@@ -220,7 +220,7 @@ class MainApplication(tk.Frame):
             tree.column('current_rank', width=80, minwidth = 80)
             tree.heading('gup_dan', text="gup/dan")
             tree.column('gup_dan', width=60, minwidth = 60)
-            
+
             for row in retval_rows:
                 tree.insert("", "end", values=row)
 
@@ -239,13 +239,13 @@ class MainApplication(tk.Frame):
             sql_query = "call ptkd_payments_in_arrears();"
             retval = pd.read_sql(sql_query, cnxn)
             retval_rows = retval.to_numpy().tolist()
-            
+
             columns = ('student_id', 'first_name', 'last_name', 'email1', 'email2', 'payment_good_till', 'pay_rate', 'comment')
             tree = ttk.Treeview(tab1, columns=columns, show='headings', height = 20)
 
             tree["column"] = list(retval.columns)
             tree["show"] =  "headings"
-            
+
             tree.heading('student_id', text="ID")
             tree.column('student_id', width=30, minwidth = 30)
             tree.heading('first_name', text="first_name")
@@ -262,7 +262,7 @@ class MainApplication(tk.Frame):
             tree.column('pay_rate', width=50, minwidth = 50)
             tree.heading('comment', text="comment")
             tree.column('comment', width=180, minwidth = 400)
-            
+
             for row in retval_rows:
                 tree.insert("", "end", values=row)
 
@@ -282,7 +282,7 @@ class MainApplication(tk.Frame):
             phone = section2_entry4.get()
             dob = section2_entry5.get()
             params = (first_name, last_name, email, phone, dob)
-            sqlstring = "ptkd_add_new_student"    
+            sqlstring = "ptkd_add_new_student"
             conn = get_connection_connector()
             cursor = conn.cursor()
             cursor.callproc(sqlstring, params)
@@ -302,7 +302,7 @@ class MainApplication(tk.Frame):
             total = section3_entry7.get()
             payrate = section3_entry6.get()
             daterange = section3_entry8.get()
-            id_list = [id1, id2, id3, id4]   
+            id_list = [id1, id2, id3, id4]
             conn = get_connection_connector()
             cursor_conn = conn.cursor()
             cnxn = get_connection_pyodbc()
@@ -394,13 +394,13 @@ class MainApplication(tk.Frame):
 
             return_df = return_df()
             return_df_rows = return_df.to_numpy().tolist()
-            
+
             columns = ('student_id', 'first_name', 'last_name', 'payment_good_till', 'dob', 'current_rank', 'active', 'email1', 'trial_student')
             tree = ttk.Treeview(tab1, columns=columns, show='headings', height = 20)
 
             tree["column"] = list(return_df.columns)
             tree["show"] =  "headings"
-            
+
             tree.heading('student_id', text="ID")
             tree.column('student_id', width=40)
             tree.heading('first_name', text="first_name")
@@ -419,7 +419,7 @@ class MainApplication(tk.Frame):
             tree.column('email1', width=215)
             tree.heading('trial_student', text="trial_student")
             tree.column('trial_student', width=70)
-            
+
             for row in return_df_rows:
                 tree.insert("", "end", values=row)
 
@@ -468,6 +468,38 @@ class MainApplication(tk.Frame):
             section5_entry3.delete(0, END)
             section5_entry4.delete(0, END)
 
+        def email_all_students():
+            cnxn = get_connection_pyodbc()
+            cursor_cnxn = cnxn.cursor()
+
+            retval = pd.read_sql("call ptkd_all_active_emails();", cnxn)
+            df_list = retval['email_addresses'].tolist()
+            email_list = "; ".join(df_list)
+
+            msg = email.message.Message()
+            msg.set_unixfrom('pymotw')
+            msg["Subject"] = "Performance Taekwon-Do - Announcements"
+            msg["From"] = "saoneil@live.com"
+            msg["Bcc"] = email_list
+            msg["Cc"] = "tkd.smacrury@gmail.com; yoosin1995@hotmail.com"
+            finalstring = ''
+            with open('C:\\Users\\saone\\Documents\\Python Stuff\\prod\\crm\\email_all.txt', 'r') as f:
+                for line in f:
+
+                    finalstring = finalstring + line
+
+            msg.set_payload(finalstring)
+
+            with imaplib.IMAP4_SSL(host) as c:
+                c.login(username, password)
+                c.append('DRAFTS', '',
+                    imaplib.Time2Internaldate(time.time()),
+                    str(msg).encode('utf-8'))
+
+            cnxn.commit()
+            cursor_cnxn.close()
+
+
 
         #################
         ### SECTION 1 ###
@@ -494,6 +526,12 @@ class MainApplication(tk.Frame):
         section1_entry2.grid(row=9, column=1, sticky=W, pady=(0,7), padx=(90,0))
 
         #################
+        ## SECTION 1.5 ##
+        #################
+        section1p5_button1 = ttk.Button(tab1, text="Draft Email to All Students", command = email_all_students)
+        section1p5_button1.place(relx=0.02, rely=0.5)
+
+        #################
         ### SECTION 2 ###
         #################
         section2_button1 = ttk.Button(tab1, text="Add Student To Database", command = add_student_to_db)
@@ -502,7 +540,7 @@ class MainApplication(tk.Frame):
         section3_label3 = ttk.Label(tab1, text="          Email: ").grid(row=13, column=1, sticky=W, pady=(0,5), padx=(15,5))
         section4_label4 = ttk.Label(tab1, text="         Phone: ").grid(row=14, column=1, sticky=W, pady=(0,5), padx=(15,5))
         section2_label5 = ttk.Label(tab1, text="            DOB: ").grid(row=15, column=1, sticky=W, pady=(0,5), padx=(15,5))
-        
+
         section2_button1.grid(row=10, column=1, sticky=W, pady=(150, 15), padx=(40,50))
         section2_entry1 = tk.Entry(tab1, width=20)
         section2_entry1.grid(row=11, column=1, sticky=W, padx=(80,5))
@@ -514,7 +552,7 @@ class MainApplication(tk.Frame):
         section2_entry4.grid(row=14, column=1, sticky=W, padx=(80,5))
         section2_entry5 = tk.Entry(tab1, width=20)
         section2_entry5.grid(row=15, column=1, sticky=W, padx=(80,5))
-        
+
         #################
         ### SECTION 3 ###
         #################
@@ -574,7 +612,7 @@ class MainApplication(tk.Frame):
         section5_entry3.grid(row=13, column=4, sticky=W, padx=(80,50))
         section5_entry4 = ttk.Entry(tab1, width=8)
         section5_entry4.grid(row=14, column=4, sticky=W, padx=(80,50))
-    
+
 
 
 
@@ -584,11 +622,11 @@ class MainApplication(tk.Frame):
 
         ############      #        #######         ######
              #           # #       #      #       #      #
-             #          #   #      #      #            # 
-             #         # ### #     #  ####         # 
-             #        #       #    #      #       #      
+             #          #   #      #      #            #
+             #         # ### #     #  ####         #
+             #        #       #    #      #       #
              #       #         #   #  #####       #######
-        
+
 
 
         #################
@@ -672,8 +710,3 @@ if __name__ == "__main__":
     root.resizable(width=False, height=False)
     MainApplication(root)
     root.mainloop()
-
-
-
-
-
