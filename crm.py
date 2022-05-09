@@ -467,7 +467,6 @@ class MainApplication(tk.Frame):
             section5_entry2.delete(0, END)
             section5_entry3.delete(0, END)
             section5_entry4.delete(0, END)
-
         def email_all_students():
             cnxn = get_connection_pyodbc()
             cursor_cnxn = cnxn.cursor()
@@ -633,7 +632,7 @@ class MainApplication(tk.Frame):
         ### SECTION 1 ###
         #################
         quotes = "\""
-        def get_report():
+        def get_report_financials():
             mail_reader_string_start = str(period_entry_start.get())
             mail_reader_string_end = str(period_entry_end.get())
             datestring = ''
@@ -652,7 +651,7 @@ class MainApplication(tk.Frame):
 
 
         desc_label = ttk.Label(tab2, text = "Type a time period below and click \"Get Report\" for a summary \nof the received tuition fees, gear expenditure and credits/other.")
-        desc_label.grid(row=1, column=1, padx=(15,45), pady=(30,10))
+        desc_label.grid(row=1, column=1, padx=(15,45), pady=(50,30))
 
         prompt_label_start = ttk.Label(tab2, text= "Enter the time period (e.g. 1-Jan-2022)  ||  Start: ")
         prompt_label_start.grid(row=2, column=1, padx=(15,15), pady=(10,10), sticky='W')
@@ -668,8 +667,8 @@ class MainApplication(tk.Frame):
         period_entry_end.grid(row=3, column=1, padx=(225,0))
         period_entry_end.insert(0, '')
 
-        total_fees_button = ttk.Button(tab2, text="Get Report", command = get_report)
-        total_fees_button.grid(row=4, column=1, padx=(15,15), pady=(15,15), sticky='W')
+        total_fees_button = ttk.Button(tab2, text="Get Report", command = get_report_financials)
+        total_fees_button.grid(row=4, column=1, padx=(15,15), pady=(45,15), sticky='W')
 
         result_string = StringVar()
         result_string.set("Total Fees w/ Receipts: \nTotal Gear Fees w/ Receipts: \nTotal Testing/Credits Collected:")
@@ -683,13 +682,37 @@ class MainApplication(tk.Frame):
         #################
         ### SECTION 2 ###
         #################
+        def get_report_projections():
+            cnxn = get_connection_pyodbc()
+            cursor = cnxn.cursor()
+            sql_query = "call ptkd_projected_income_by_month();"
+            retval = pd.read_sql(sql_query, cnxn)
+            retval_rows = retval.to_numpy().tolist()
+
+            columns = ('Period', 'Total Left To Receive as of Period')
+            tree_proj = ttk.Treeview(tab2, columns=columns, show='headings', height = 13)
+
+            tree_proj["column"] = list(retval.columns)
+            tree_proj["show"] =  "headings"
+
+            tree_proj.heading('Period', text="Period")
+            tree_proj.column('Period', width=75, minwidth=75)
+            tree_proj.heading('Total Left To Receive as of Period', text="Left To Receive")
+            tree_proj.column('Total Left To Receive as of Period', width=100, minwidth=100)
+
+            for row in retval_rows:
+                tree_proj.insert("", "end", values=row)
+
+            tree_proj.place(x=550, y=85)
+            cursor.close()
+            cnxn.close()
 
 
+        projection_label = ttk.Label(tab2, text = "Click the button to show the projected income for the indicated \nperiods, spanning 12 months based on the current pay rates:")
+        projection_label.grid(row=1, column=6, padx=(75,45), pady=(0,10))
 
-
-
-
-
+        button = tk.Button(tab2, text='Generate Projections', command=get_report_projections)
+        button.place(relx=0.85, rely=0.05)
 
 
 
