@@ -713,6 +713,7 @@ class MainApplication(tk.Frame):
 
         button = tk.Button(tab2, text='Generate Projections', command=get_report_projections)
         button.place(relx=0.85, rely=0.05)
+        get_report_projections()
 
 
 
