@@ -714,8 +714,70 @@ class MainApplication(tk.Frame):
         button = tk.Button(tab2, text='Generate Projections', command=get_report_projections)
         button.place(relx=0.85, rely=0.05)
         get_report_projections()
+        
+        
+        #################
+        ### SECTION 3 ###
+        #################
+        def get_run_info():
+            event_name = run_event_entry.get()
+            if event_name == "":
+                sql_query = "call TeamNS_athlete_running_data_summary(null);"
+            elif event_name != "":
+                sql_query = "call TeamNS_athlete_running_data_summary('" + event_name + "');"
+            cnxn = get_connection_connector()
+            cursor = cnxn.cursor()
+            
+            retval = pd.read_sql(sql_query, cnxn)
+            retval_rows = retval.to_numpy().tolist()
 
+            columns = ('ID', 'First Name', 'Last Name', 'Distance (km)', 'Minutes', 'Seconds', 'Pace (min/km)', 'Notes')
+            tree = ttk.Treeview(tab3, columns=columns, show='headings', height = 12)
 
+            tree["column"] = list(retval.columns)
+            tree["show"] =  "headings"
+
+            tree.heading('ID', text="ID")
+            tree.column('ID', width=20, minwidth=20)
+            tree.heading('First Name', text="First Name")
+            tree.column('First Name', width=75, minwidth=75)
+            tree.heading('Last Name', text="Last Name")
+            tree.column('Last Name', width=75, minwidth=75)
+            tree.heading('Distance (km)', text="Distance (km)")
+            tree.column('Distance (km)', width=100, minwidth=100)
+            tree.heading('Minutes', text="Minutes")
+            tree.column('Minutes', width=80, minwidth=80)
+            tree.heading('Seconds', text="Seconds")
+            tree.column('Seconds', width=80, minwidth=80)
+            tree.heading('Pace (min/km)', text="Pace (min/km)")
+            tree.column('Pace (min/km)', width=110, minwidth=110)
+            tree.heading('Notes', text="Notes")
+            tree.column('Notes', width=200, minwidth=200)
+
+            for row in retval_rows:
+                tree.insert("", "end", values=row)
+
+            tree.place(x=250, y=15)
+            vert_scrollbar = ttk.Scrollbar(tab3, orient=tk.VERTICAL, command=tree.yview)
+            horz_scrollbar = ttk.Scrollbar(tab3, orient=tk.HORIZONTAL, command=tree.xview)
+            tree.configure(yscrollcommand=vert_scrollbar.set, xscrollcommand=horz_scrollbar.set)
+            # vert_scrollbar.place(x=985, y=5, height=418)
+            # horz_scrollbar.place(x=220, y=427, width=500)
+            cursor.close()
+            cnxn.close()
+            
+            
+    
+
+        run_data_desc = ttk.Label(tab3, text="Enter which event you would like data for:")
+        run_data_desc.grid(row=1, column=1, padx=(15,45), pady=(50,15))
+        run_event_entry = tk.Entry(tab3, width=25)
+        run_event_entry.insert(0, "")
+        run_event_entry.grid(row=2, column=1, padx=(15,45), pady=(0,15))
+        
+        run_data_button = tk.Button(tab3, text="Get Run Data", command=get_run_info)
+        run_data_button.grid(row=3, column=1, padx=(15,45), pady=(0,30))
+        
 
 
 
