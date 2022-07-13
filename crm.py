@@ -716,9 +716,19 @@ class MainApplication(tk.Frame):
         get_report_projections()
         
         
-        #################
-        ### SECTION 3 ###
-        #################
+        
+        
+        
+        
+        
+        ############      #        #######         ######
+             #           # #       #      #             #
+             #          #   #      #      #             #
+             #         # ### #     #  ####         ######
+             #        #       #    #      #             #
+             #       #         #   #  #####        ######
+             
+             
         def get_run_info():
             event_name = run_event_entry.get()
             if event_name == "":
