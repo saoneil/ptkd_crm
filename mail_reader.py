@@ -4,8 +4,8 @@ import os
 
 #https://www.youtube.com/watch?v=6DD4IOHhNYo
 
-datestring_start = 'ALL SINCE "1-Jan-2022"'
-datestring_end = ''
+#datestring_start = 'ALL SINCE "1-Jan-2022"'
+#datestring_end = ''
 # datestring_start = 'ALL SINCE "1-Jan-2022"'
 # datestring_end = 'BEFORE "31-Dec-2021"'
 def mail_reader_func(datestring_start, datestring_end):
@@ -56,7 +56,8 @@ def mail_reader_func(datestring_start, datestring_end):
 
 
     #_, search_data = mail.search(None, 'ALL SINCE "1-Jan-2021" BEFORE "31-Dec-2021"')
-    _, search_data = mail.search(None, 'ALL SINCE "1-Jan-2022"')
+    #_, search_data = mail.search(None, 'ALL SINCE "1-Jan-2023"')
+    _, search_data = mail.search(None, datestring_start + datestring_end)
 
 
     list_gearfees = []

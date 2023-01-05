@@ -644,7 +644,7 @@ class MainApplication(tk.Frame):
 
 
             period_entry_start.delete(0, END)
-            period_entry_start.insert(0, '1-Jan-2022')
+            period_entry_start.insert(0, '1-Jan-2023')
             period_entry_end.delete(0, END)
 
             refresh_search_saved()
@@ -653,7 +653,7 @@ class MainApplication(tk.Frame):
         desc_label = ttk.Label(tab2, text = "Type a time period below and click \"Get Report\" for a summary \nof the received tuition fees, gear expenditure and credits/other.")
         desc_label.grid(row=1, column=1, padx=(15,45), pady=(50,30))
 
-        prompt_label_start = ttk.Label(tab2, text= "Enter the time period (e.g. 1-Jan-2022)  ||  Start: ")
+        prompt_label_start = ttk.Label(tab2, text= "Enter the time period (e.g. 1-Jan-2023)  ||  Start: ")
         prompt_label_start.grid(row=2, column=1, padx=(15,15), pady=(10,10), sticky='W')
 
         prompt_label_end = ttk.Label(tab2, text= "End: ")
@@ -661,7 +661,7 @@ class MainApplication(tk.Frame):
 
         period_entry_start = ttk.Entry(tab2, width=15)
         period_entry_start.grid(row=2, column=1, padx=(225,0))
-        period_entry_start.insert(0, '1-Jan-2022')
+        period_entry_start.insert(0, '1-Jan-2023')
 
         period_entry_end = ttk.Entry(tab2, width=15)
         period_entry_end.grid(row=3, column=1, padx=(225,0))
