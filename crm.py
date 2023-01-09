@@ -635,12 +635,15 @@ class MainApplication(tk.Frame):
         def get_report_financials():
             mail_reader_string_start = str(period_entry_start.get())
             mail_reader_string_end = str(period_entry_end.get())
-            datestring = ''
+            #datestring = ''
             if mail_reader_string_end == '':
-                datestring_mail = 'ALL SINCE "' + mail_reader_string_start + '"'
-                return_string = mail_reader_func(datestring_mail, '')
+                #datestring_mail = 'ALL SINCE "' + mail_reader_string_start + '"'
+                return_string = mail_reader_func('ALL SINCE "' + mail_reader_string_start + '"', '')
                 result_string.set(return_string)
-                #print(return_string)
+            else:
+                datestring_mail = 'ALL SINCE "' + mail_reader_string_start
+                return_string = mail_reader_func('ALL SINCE "' + mail_reader_string_start + '"', ' BEFORE "' + mail_reader_string_end + '"')
+                result_string.set(return_string)
 
 
             period_entry_start.delete(0, END)
