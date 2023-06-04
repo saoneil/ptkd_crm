@@ -1,2 +1,2 @@
 @echo off
-"C:\Users\saone\AppData\Local\Programs\Python\Python310\python.exe" "C:\Users\saone\Documents\Python Stuff\prod\crm\crm.py"
+"C:\Users\saone\AppData\Local\Programs\Python\Python311\python.exe" "C:\Users\saone\Documents\Python Stuff\ptkd_crm\crm.py"
