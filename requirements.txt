@@ -26,7 +26,6 @@ protobuf==3.19.4
 py2exe==0.11.1.0
 pycparser==2.21
 pynput==1.7.5
-pyodbc @ file:///C:/Users/saone/Downloads/pyodbc-4.0.32-cp310-cp310-win_amd64.whl
 python-dateutil==2.8.2
 pytz==2021.3
 six==1.16.0
