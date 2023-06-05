@@ -88,7 +88,7 @@ class MainApplication(tk.Frame):
             cursor = cnxn.cursor()
             sql_query = "SELECT * FROM ptkd_students.ptkd_students;"
             retval = pd.read_sql(sql_query, cnxn)
-            retval.to_csv(r'C:\Users\saone\Documents\Python Stuff\prod\crm_files\db_backup.csv')
+            retval.to_csv(r"F:\\Documents\\Taekwon-Do\\crm_files\\db_backup.csv")
             dblabel.after(1000, refresh_status_saved())
         def view_all_active_students():
             cnxn = get_connection_pyodbc()
@@ -331,7 +331,7 @@ class MainApplication(tk.Frame):
             msg["To"] = emails_final
             msg["Bcc"] = "performance_taekwondo@hotmail.com"
             finalstring = ''
-            with open('C:\\Users\\saone\\Documents\\Python Stuff\\prod\\crm\\receipt.txt', 'r') as f:
+            with open('C:\\Users\\saone\\Documents\\Python Stuff\\ptkd_crm\\receipt.txt', 'r') as f:
                 for i, line in enumerate(f):
                     line = line.rstrip('\n')
                     if i == 4:
@@ -477,12 +477,12 @@ class MainApplication(tk.Frame):
 
             msg = email.message.Message()
             msg.set_unixfrom('pymotw')
-            msg["Subject"] = "Performance Taekwon-Do - Announcements"
+            msg["Subject"] = "Performance MA - Announcements"
             msg["From"] = "saoneil@live.com"
             msg["Bcc"] = email_list
             msg["Cc"] = "tkd.smacrury@gmail.com; yoosin1995@hotmail.com"
             finalstring = ''
-            with open('C:\\Users\\saone\\Documents\\Python Stuff\\prod\\crm\\email_all.txt', 'r') as f:
+            with open('C:\\Users\\saone\\Documents\\Python Stuff\\ptkd_crm\\email_all.txt', 'r') as f:
                 for line in f:
 
                     finalstring = finalstring + line
