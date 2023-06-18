@@ -48,9 +48,9 @@ class MainApplication(tk.Frame):
         tab1 = ttk.Frame(nb)
         nb.add(tab1, text='PTKD Students')
         tab2 = ttk.Frame(nb)
-        nb.add(tab2, text='PTKD Financial Reporting')
+        nb.add(tab2, text='PTKD Testing Updates')
         tab3 = ttk.Frame(nb)
-        nb.add(tab3, text='Team NS')
+        nb.add(tab3, text='PTKD Runs, Financial Reporting')
 
 
         ############      #        #######          ###
@@ -651,87 +651,6 @@ class MainApplication(tk.Frame):
             period_entry_end.delete(0, END)
 
             refresh_search_saved()
-
-
-        desc_label = ttk.Label(tab2, text = "Type a time period below and click \"Get Report\" for a summary \nof the received tuition fees, gear expenditure and credits/other.")
-        desc_label.grid(row=1, column=1, padx=(15,45), pady=(50,30))
-
-        prompt_label_start = ttk.Label(tab2, text= "Enter the time period (e.g. 1-Jan-2023)  ||  Start: ")
-        prompt_label_start.grid(row=2, column=1, padx=(15,15), pady=(10,10), sticky='W')
-
-        prompt_label_end = ttk.Label(tab2, text= "End: ")
-        prompt_label_end.grid(row=3, column=1, padx=(237,15), pady=(10,10), sticky='W')
-
-        period_entry_start = ttk.Entry(tab2, width=15)
-        period_entry_start.grid(row=2, column=1, padx=(225,0))
-        period_entry_start.insert(0, '1-Jan-2023')
-
-        period_entry_end = ttk.Entry(tab2, width=15)
-        period_entry_end.grid(row=3, column=1, padx=(225,0))
-        period_entry_end.insert(0, '')
-
-        total_fees_button = ttk.Button(tab2, text="Get Report", command = get_report_financials)
-        total_fees_button.grid(row=4, column=1, padx=(15,15), pady=(45,15), sticky='W')
-
-        result_string = StringVar()
-        result_string.set("Total Fees w/ Receipts: \nTotal Gear Fees w/ Receipts: \nTotal Testing/Credits Collected:")
-        result_label = ttk.Label(tab2, textvariable=result_string, font = 'Verdana 10 bold')
-        result_label.grid(row=5, column=1, padx=(15,15), pady=(15,15), sticky='W')
-
-        mailsearch_label = tk.Label(tab2, text="search counter:")
-        mailsearch_label.place(x=95, y=165)
-
-
-        #################
-        ### SECTION 2 ###
-        #################
-        def get_report_projections():
-            cnxn = get_connection_pyodbc()
-            cursor = cnxn.cursor()
-            sql_query = "call ptkd_projected_income_by_month();"
-            retval = pd.read_sql(sql_query, cnxn)
-            retval_rows = retval.to_numpy().tolist()
-
-            columns = ('Period', 'Total Left To Receive as of Period')
-            tree_proj = ttk.Treeview(tab2, columns=columns, show='headings', height = 13)
-
-            tree_proj["column"] = list(retval.columns)
-            tree_proj["show"] =  "headings"
-
-            tree_proj.heading('Period', text="Period")
-            tree_proj.column('Period', width=75, minwidth=75)
-            tree_proj.heading('Total Left To Receive as of Period', text="Left To Receive")
-            tree_proj.column('Total Left To Receive as of Period', width=100, minwidth=100)
-
-            for row in retval_rows:
-                tree_proj.insert("", "end", values=row)
-
-            tree_proj.place(x=550, y=85)
-            cursor.close()
-            cnxn.close()
-
-
-        projection_label = ttk.Label(tab2, text = "Click the button to show the projected income for the indicated \nperiods, spanning 12 months based on the current pay rates:")
-        projection_label.grid(row=1, column=6, padx=(75,45), pady=(0,10))
-
-        button = tk.Button(tab2, text='Generate Projections', command=get_report_projections)
-        button.place(relx=0.85, rely=0.05)
-        get_report_projections()
-        
-        
-        
-        
-        
-        
-        
-        ############      #        #######         ######
-             #           # #       #      #             #
-             #          #   #      #      #             #
-             #         # ### #     #  ####         ######
-             #        #       #    #      #             #
-             #       #         #   #  #####        ######
-             
-             
         def get_run_info():
             event_name = run_event_entry.get()
             if event_name == "":
@@ -771,28 +690,254 @@ class MainApplication(tk.Frame):
                 tree.insert("", "end", values=row)
 
             tree.place(x=250, y=15)
-            vert_scrollbar = ttk.Scrollbar(tab3, orient=tk.VERTICAL, command=tree.yview)
-            horz_scrollbar = ttk.Scrollbar(tab3, orient=tk.HORIZONTAL, command=tree.xview)
+            vert_scrollbar = ttk.Scrollbar(tab2, orient=tk.VERTICAL, command=tree.yview)
+            horz_scrollbar = ttk.Scrollbar(tab2, orient=tk.HORIZONTAL, command=tree.xview)
             tree.configure(yscrollcommand=vert_scrollbar.set, xscrollcommand=horz_scrollbar.set)
             # vert_scrollbar.place(x=985, y=5, height=418)
             # horz_scrollbar.place(x=220, y=427, width=500)
             cursor.close()
             cnxn.close()
-            
-            
-    
 
-        run_data_desc = ttk.Label(tab3, text="Enter which event you would like data for:")
-        run_data_desc.grid(row=1, column=1, padx=(15,45), pady=(50,15))
-        run_event_entry = tk.Entry(tab3, width=25)
+        run_data_desc = ttk.Label(tab3, text="Enter event name:")
+        run_data_desc.grid(row=1, column=1, padx=(0,0), pady=(45,5))
+        run_event_entry = tk.Entry(tab3, width=20)
         run_event_entry.insert(0, "")
-        run_event_entry.grid(row=2, column=1, padx=(15,45), pady=(0,15))
+        run_event_entry.grid(row=2, column=1, padx=(0,0), pady=(5,0))
         
         run_data_button = tk.Button(tab3, text="Get Run Data", command=get_run_info)
-        run_data_button.grid(row=3, column=1, padx=(15,45), pady=(0,30))
+        run_data_button.grid(row=3, column=1, padx=(0,0), pady=(20,0))
+
+        desc_label = ttk.Label(tab3, text = "Type a time period below and click \"Get Report\" for a summary \nof the received tuition fees, gear expenditure and credits/other.")
+        desc_label.grid(row=4, column=1, padx=(0,0), pady=(200,0))
+
+        prompt_label_start = ttk.Label(tab3, text= "Enter the time period (e.g. 1-Jan-2023)  ||  Start: ")
+        prompt_label_start.grid(row=5, column=1, padx=(0,0), pady=(25,0), sticky='W')
+
+        prompt_label_end = ttk.Label(tab3, text= "End: ")
+        prompt_label_end.grid(row=6, column=1, padx=(223,0), pady=(0,0), sticky='W')
+
+        period_entry_start = ttk.Entry(tab3, width=15)
+        period_entry_start.grid(row=5, column=1, padx=(250,0), pady=(23,0))
+        period_entry_start.insert(0, '1-Jan-2023')
+
+        period_entry_end = ttk.Entry(tab3, width=15)
+        period_entry_end.grid(row=6, column=1, padx=(250,0))
+        period_entry_end.insert(0, '')
+
+        total_fees_button = ttk.Button(tab3, text="Get Report", command = get_report_financials)
+        total_fees_button.grid(row=7, column=1, padx=(0,0), pady=(50,25), sticky='W')
+
+        result_string = StringVar()
+        result_string.set("Total Fees w/ Receipts: \nTotal Gear Fees w/ Receipts: \nTotal Testing/Credits Collected:")
+        result_label = ttk.Label(tab3, textvariable=result_string, font = 'Verdana 10 bold')
+        result_label.grid(row=8, column=1, padx=(0,0), pady=(0,0), sticky='W')
+
+        mailsearch_label = tk.Label(tab3, text="search counter:")
+        mailsearch_label.place(x=95, y=485)
+
+
+        #################
+        ### SECTION 2 ###
+        #################
+        def get_report_projections():
+            cnxn = get_connection_pyodbc()
+            cursor = cnxn.cursor()
+            sql_query = "call ptkd_projected_income_by_month();"
+            retval = pd.read_sql(sql_query, cnxn)
+            retval_rows = retval.to_numpy().tolist()
+
+            columns = ('Period', 'Total Left To Receive as of Period')
+            tree_proj = ttk.Treeview(tab3, columns=columns, show='headings', height = 13)
+
+            tree_proj["column"] = list(retval.columns)
+            tree_proj["show"] =  "headings"
+
+            tree_proj.heading('Period', text="Period")
+            tree_proj.column('Period', width=75, minwidth=75)
+            tree_proj.heading('Total Left To Receive as of Period', text="Left To Receive")
+            tree_proj.column('Total Left To Receive as of Period', width=100, minwidth=100)
+
+            for row in retval_rows:
+                tree_proj.insert("", "end", values=row)
+
+            tree_proj.place(x=550, y=400)
+            cursor.close()
+            cnxn.close()
+
+
+        projection_label = ttk.Label(tab3, text = "Click the button to show the projected income for the indicated \nperiods, spanning 12 months based on the current pay rates:")
+        projection_label.grid(row=4, column=6, padx=(100,0), pady=(200,0))
+
+        button = tk.Button(tab3, text='Generate Projections', command=get_report_projections)
+        button.place(relx=0.85, rely=0.45)
+        get_report_projections()
+        
+        
+        
+        
+        
+        
+        
+        ############      #        #######         ######
+             #           # #       #      #             #
+             #          #   #      #      #             #
+             #         # ### #     #  ####         ######
+             #        #       #    #      #             #
+             #       #         #   #  #####        ######
+             
+
+        def ptkd_testing_update():
+                    date = tab3_entry1.get()
+                    studentid_1 = tab3_entry1.get()
+                    studentid_2 = tab3_entry2.get()
+                    studentid_3 = tab3_entry3.get()
+                    studentid_4 = tab3_entry4.get()
+                    studentid_5 = tab3_entry5.get()
+                    studentid_6 = tab3_entry6.get()
+                    studentid_7 = tab3_entry7.get()
+                    studentid_8 = tab3_entry8.get()
+                    studentid_9 = tab3_entry9.get()
+                    studentid_10 = tab3_entry10.get()
+                    studentid_11 = tab3_entry11.get()
+                    studentid_12 = tab3_entry12.get()
+                    studentid_13 = tab3_entry13.get()
+                    studentid_14 = tab3_entry14.get()
+                    studentid_15 = tab3_entry15.get()
+                    studentid_16 = tab3_entry16.get()
+                    studentid_17 = tab3_entry17.get()
+                    studentid_18 = tab3_entry18.get()
+                    studentid_19 = tab3_entry19.get()
+                    studentid_20 = tab3_entry20.get()
+                    studentid_21 = tab3_entry21.get()
+                    studentid_22 = tab3_entry22.get()
+                    studentid_23 = tab3_entry23.get()
+                    studentid_24 = tab3_entry24.get()
+                    studentid_25 = tab3_entry25.get()
+                    id_list = [ 
+                        studentid_2, 
+                        studentid_3, 
+                        studentid_4, 
+                        studentid_5,
+                        studentid_6,
+                        studentid_7,
+                        studentid_8,
+                        studentid_9,
+                        studentid_10,
+                        studentid_11,
+                        studentid_12,
+                        studentid_13,
+                        studentid_14,
+                        studentid_15,
+                        studentid_16,
+                        studentid_17,
+                        studentid_18,
+                        studentid_19,
+                        studentid_20,
+                        studentid_21,
+                        studentid_22,
+                        studentid_23,
+                        studentid_24,
+                        studentid_25
+                        ]
+                    conn = get_connection_connector()
+                    cursor = conn.cursor()
+                    for i in range(id_list.index('')):
+                        sqlstring = "ptkd_testing_update"
+                        params_seq = (id_list[i], date)
+                        cursor.callproc(sqlstring, params_seq)
+                    conn.commit()
+                    cursor.close()
+                    tab3_entry1.delete(0, END)
+                    tab3_entry2.delete(0, END)
+                    tab3_entry3.delete(0, END)
+                    tab3_entry4.delete(0, END)
+                    tab3_entry5.delete(0, END)
+                    tab3_entry6.delete(0, END)
+                    tab3_entry7.delete(0, END)
+                    tab3_entry8.delete(0, END)
+                    tab3_entry9.delete(0, END)
+                    tab3_entry10.delete(0, END)
+                    tab3_entry11.delete(0, END)
+                    tab3_entry12.delete(0, END)
+                    tab3_entry13.delete(0, END)
+                    tab3_entry14.delete(0, END)
+                    tab3_entry15.delete(0, END)
+                    tab3_entry16.delete(0, END)
+                    tab3_entry17.delete(0, END)
+                    tab3_entry18.delete(0, END)
+                    tab3_entry19.delete(0, END)
+                    tab3_entry20.delete(0, END)
+                    tab3_entry21.delete(0, END)
+                    tab3_entry22.delete(0, END)
+                    tab3_entry23.delete(0, END)
+                    tab3_entry24.delete(0, END)
+                    tab3_entry25.delete(0, END)
+
+        
+        tab3_button_1 = ttk.Button(tab2, text="Run Testing Update", command = ptkd_testing_update)
+        tab3_button_1.grid(row=1, column=1, sticky=E, pady=(50,15), padx=(50,50))
+
+        tab3_label_1 = ttk.Label(tab2, text="Test Date:").grid(row=2, column=1, sticky=W, pady=(0,5), padx=(25,5))
+        tab3_label_2 = ttk.Label(tab2, text="Student IDs:").grid(row=3, column=1, sticky=W, pady=(0,5), padx=(15,5))
+
+        tab3_entry1 = ttk.Entry(tab2, width=15)
+        tab3_entry1.grid(row=2, column=1, sticky=W, padx=(80,50))
+        tab3_entry2 = ttk.Entry(tab2, width=8)
+        tab3_entry2.grid(row=3, column=1, sticky=W, padx=(80,50))
+        tab3_entry3 = ttk.Entry(tab2, width=8)
+        tab3_entry3.grid(row=4, column=1, sticky=W, padx=(80,50))
+        tab3_entry4 = ttk.Entry(tab2, width=8)
+        tab3_entry4.grid(row=5, column=1, sticky=W, padx=(80,50))
+        tab3_entry5 = ttk.Entry(tab2, width=8)
+        tab3_entry5.grid(row=6, column=1, sticky=W, padx=(80,50))
+
+        tab3_entry6 = ttk.Entry(tab2, width=8)
+        tab3_entry6.grid(row=7, column=1, sticky=W, padx=(80,50))
+        tab3_entry7 = ttk.Entry(tab2, width=8)
+        tab3_entry7.grid(row=8, column=1, sticky=W, padx=(80,50))
+        tab3_entry8 = ttk.Entry(tab2, width=8)
+        tab3_entry8.grid(row=9, column=1, sticky=W, padx=(80,50))
+        tab3_entry9 = ttk.Entry(tab2, width=8)
+        tab3_entry9.grid(row=10, column=1, sticky=W, padx=(80,50))
+        tab3_entry10 = ttk.Entry(tab2, width=8)
+        tab3_entry10.grid(row=11, column=1, sticky=W, padx=(80,50))
+
+        tab3_entry11 = ttk.Entry(tab2, width=8)
+        tab3_entry11.grid(row=12, column=1, sticky=W, padx=(80,50))
+        tab3_entry12 = ttk.Entry(tab2, width=8)
+        tab3_entry12.grid(row=13, column=1, sticky=W, padx=(80,50))
+        tab3_entry13 = ttk.Entry(tab2, width=8)
+        tab3_entry13.grid(row=14, column=1, sticky=W, padx=(80,50))
+        tab3_entry14 = ttk.Entry(tab2, width=8)
+        tab3_entry14.grid(row=15, column=1, sticky=W, padx=(80,50))
+        tab3_entry15 = ttk.Entry(tab2, width=8)
+        tab3_entry15.grid(row=16, column=1, sticky=W, padx=(80,50))
+
+        tab3_entry16 = ttk.Entry(tab2, width=8)
+        tab3_entry16.grid(row=17, column=1, sticky=W, padx=(80,50))
+        tab3_entry17 = ttk.Entry(tab2, width=8)
+        tab3_entry17.grid(row=18, column=1, sticky=W, padx=(80,50))
+        tab3_entry18 = ttk.Entry(tab2, width=8)
+        tab3_entry18.grid(row=19, column=1, sticky=W, padx=(80,50))
+        tab3_entry19 = ttk.Entry(tab2, width=8)
+        tab3_entry19.grid(row=20, column=1, sticky=W, padx=(80,50))
+        tab3_entry20 = ttk.Entry(tab2, width=8)
+        tab3_entry20.grid(row=21, column=1, sticky=W, padx=(80,50))
+
+        tab3_entry21 = ttk.Entry(tab2, width=8)
+        tab3_entry21.grid(row=22, column=1, sticky=W, padx=(80,50))
+        tab3_entry22 = ttk.Entry(tab2, width=8)
+        tab3_entry22.grid(row=23, column=1, sticky=W, padx=(80,50))
+        tab3_entry23 = ttk.Entry(tab2, width=8)
+        tab3_entry23.grid(row=24, column=1, sticky=W, padx=(80,50))
+        tab3_entry24 = ttk.Entry(tab2, width=8)
+        tab3_entry24.grid(row=25, column=1, sticky=W, padx=(80,50))
+        tab3_entry25 = ttk.Entry(tab2, width=8)
+        tab3_entry25.grid(row=26, column=1, sticky=W, padx=(80,50))
         
 
 
+        
 
 
 
