@@ -65,7 +65,7 @@ msg["Bcc"] = email_list
 
 finalstring = f"""Hello,
 
-I'm sending this message to students are currently outstanding for {previous_month} onward. If you could transfer these to me at your earliest convenience, that would be great.
+I'm sending this message to students who are currently outstanding for {previous_month} onward. If you could transfer these to me at your earliest convenience, that would be great.
 
 Any questions, let me know.
 
