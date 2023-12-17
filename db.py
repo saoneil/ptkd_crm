@@ -235,3 +235,11 @@ def sp_add_profile_comment(student_id, profile_comment):
     query = f"call sp_add_profile_comment({student_id}, '{profile_comment}');"
     cn = get_connection(sql_db = schema)
     execute_sql(connection=cn, sql=query)
+
+## accompanying scripts
+def sp_birthdays():
+    query = "call sp_birthdays;"
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+
+    return df
