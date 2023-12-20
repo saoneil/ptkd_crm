@@ -175,7 +175,7 @@ class MyApp(tk.Tk):
             )
         elif club == 1:
                 email_handler.create_pkrt_receipt_email(
-                subject = "Performance Taekwon-Do - Receipt",
+                subject = "Performance Karate - Receipt",
                 email_from = "saoneil@live.com",
                 emails_to = "; ".join([payer_address]),
                 emails_cc = None,
