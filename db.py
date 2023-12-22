@@ -105,8 +105,7 @@ def save_db_objects():
 
 ## tab 2 ##
 def sp_commit_new_student(first_name, last_name, email1, email2, email3, phone1, phone2, phone3, pay_rate, start_date, dob, dob_approx, does_karate, current_rank):
-    print(first_name, last_name, email1, email2, email3, phone1, phone2, phone3, pay_rate, start_date, dob, dob_approx, does_karate, current_rank)
-    query = f"call sp_commit_new_student_to_db('{first_name}', '{last_name}', '{email1}', '{email2}', '{email3}', '{phone1}', '{phone2}', '{phone3}', {pay_rate}, '{start_date}', '{dob}', {dob_approx}, {does_karate}, '{current_rank}')"
+    query = f"call sp_commit_new_student_to_db('{first_name}', '{last_name}', '{email1}', '{email2}', '{email3}', '{phone1}', '{phone2}', '{phone3}', {pay_rate}, '{start_date}', {dob}, {dob_approx}, {does_karate}, '{current_rank}')"
     cn = get_connection(sql_db = schema)
     execute_sql(connection=cn, sql=query)
 def sp_view_student_by_id(student_id):

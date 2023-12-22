@@ -212,15 +212,24 @@ class MyApp(tk.Tk):
             elif field == "Phone 3:":
                 phone3 = data
             elif field == "Pay Rate:":
-                pay_rate = data
+                if data == "":
+                    pay_rate = 0
+                else:
+                    pay_rate = data
             elif field == "Start Date (yyyy-mm-dd):":
                 start_date = data
             elif field == "DOB (yyyy-mm-dd):":
-                dob = data
+                if data == "":
+                    dob = "NULL"
+                else:
+                    dob = f"'{data}'"
             elif field == "DOB-approx:":
                 dob_approx = data
             elif field == "Does Karate:":
-                does_karate = data
+                if data == "":
+                    does_karate = 0
+                else:
+                    does_karate = data
             elif field == "Current Rank:":
                 current_rank = data
             try:
@@ -236,6 +245,12 @@ class MyApp(tk.Tk):
                     entry_widget.delete(0, 'end')
             except:
                 pass
+        print(type(pay_rate))
+        print(start_date)
+        print(type(dob))
+        print(dob_approx)
+        print(does_karate)
+        print(current_rank)
         db.sp_commit_new_student(first_name, last_name, email1, email2, email3, phone1, phone2, phone3, pay_rate, start_date, dob, dob_approx, does_karate, current_rank)
         print("Student Added to DB")
     def existing_student_selection_tab2_command(self, event=None):
