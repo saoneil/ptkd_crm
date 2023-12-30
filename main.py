@@ -33,6 +33,7 @@ class MyApp(tk.Tk):
         self.right_click_menu.add_command(label="Send Email", command=self.send_email_right_click)
         self.right_click_menu.add_command(label="Toggle 'Trial Student'", command=self.toggle_trial_right_click)
         self.right_click_menu.add_command(label="Toggle 'Active Student'", command=self.toggle_active_right_click)
+        self.right_click_menu.add_command(label="Toggle 'Wait List'", command=self.toggle_waitlist_right_click)
         self.right_click_menu.add_command(label="Add Profile Comment", command=self.profile_comment_right_click)
         self.tab_frames = []
         self.entry_widgets_search_tab1 = {}
@@ -237,7 +238,7 @@ class MyApp(tk.Tk):
                     pass
                 elif field == "DOB-approx:":
                     pass
-                elif field == "Does Karate":
+                elif field == "Does Karate:":
                     pass
                 elif field == "Current Rank:":
                     pass
@@ -734,6 +735,21 @@ class MyApp(tk.Tk):
             messagebox.showinfo("Toggle Active", "Toggled 'Active' field for StudentID = " + str(student_id_list))
         else:
             messagebox.showwarning("No Selection", "Please select records to toggle active.")
+    def toggle_waitlist_right_click(self):
+        student_id_list = []
+        selected_items = self.my_tree.selection()
+        if selected_items:
+            records_data = [self.my_tree.item(item, 'values') for item in selected_items]
+            for record in records_data:
+                student_id_list.append(record[0])
+
+            for id in student_id_list:
+                print(id + " - toggle wait_list value")
+                db.sp_toggle_trial_or_active(id, 'waitlist')
+
+            messagebox.showinfo("Toggle Active", "Toggled 'Wait List' field for StudentID = " + str(student_id_list))
+        else:
+            messagebox.showwarning("No Selection", "Please select records to toggle waitlist.")
     def profile_comment_right_click(self):
         student_id_list = []
         selected_items = self.my_tree.selection()
@@ -880,7 +896,10 @@ class MyApp(tk.Tk):
             existing_student_label.grid(row=1, column=1, sticky='e', pady=(0,30))
 
             existing_student_dropdown = ttk.Combobox(self.top_right_frame_tab2, textvariable=self.existing_student_dropdown_value)
-            existing_student_dropdown['values'] = self.all_students_list_command()
+            try:
+                existing_student_dropdown['values'] = self.all_students_list_command()
+            except:
+                existing_student_dropdown['values'] = ["DB Connection Failed"]
             existing_student_dropdown.grid(row=1, column=2, pady=(0,30))
             existing_student_dropdown.bind('<<ComboboxSelected>>', self.existing_student_selection_tab2_command)
 
