@@ -7,6 +7,27 @@ host = os.environ.get('email_host_python')
 username = os.environ.get('email_username')
 password = os.environ.get('email_password')
 
+class MyIMAPClient:
+    def __init__(self, host, username, password):
+        self.host = host
+        self.username = username
+        self.password = password
+        self.connection = None
+    
+    def login(self):
+        self.connection = imaplib.IMAP4_SSL(self.host)
+        return self.connection.login(user=self.username, password=self.password)
+    
+    def establish_connection(self):
+        if not self.connection:
+            self.login()
+        return self.connection
+    
+email_client = MyIMAPClient(host, username, password)
+email_client.login()
+connection = email_client.establish_connection()
+print('email connection established')
+
 def create_email(subject:str, email_from:str, emails_to:list, emails_cc:list, emails_bcc:list, body=str):
     msg = email.message.Message()
     msg["Subject"] = subject
@@ -15,13 +36,21 @@ def create_email(subject:str, email_from:str, emails_to:list, emails_cc:list, em
     msg["Cc"] = emails_cc
     msg["Bcc"] = emails_bcc
     msg.set_payload(body)
-    with imaplib.IMAP4_SSL(host) as c:
-        c.login(user=username, password=password)
-        c.append('DRAFTS', '',
-                 imaplib.Time2Internaldate(time.time()),
-                 str(msg).encode('utf-8'))
+    # with imaplib.IMAP4_SSL(host) as c:
+    #     c.login(user=username, password=password)
+    #     c.append('DRAFTS', '',
+    #              imaplib.Time2Internaldate(time.time()),
+    #              str(msg).encode('utf-8'))
     
-    return "Email Draft Generated"
+    # return "Email Draft Generated"
+    # connection = email_client.establish_connection()
+    if connection:
+        connection.append('DRAFTS', '',
+             imaplib.Time2Internaldate(time.time()),
+             str(msg).encode('utf-8'))
+        print("Email Draft Generated")
+    else:
+        print("Failed to create draft")
 def create_ptkd_receipt_email(subject:str, email_from:str, emails_to:list, emails_cc:list, emails_bcc:list, file_tempate:str, receipt_data:list):
     msg = email.message.Message()
     msg["Subject"] = subject
@@ -50,13 +79,22 @@ def create_ptkd_receipt_email(subject:str, email_from:str, emails_to:list, email
             body = body + '\n' + line
 
     msg.set_payload(body)
-    with imaplib.IMAP4_SSL(host) as c:
-        c.login(user=username, password=password)
-        c.append('DRAFTS', '',
-                 imaplib.Time2Internaldate(time.time()),
-                 str(msg).encode('utf-8'))
 
-    print("Email Draft Generated")
+    # with imaplib.IMAP4_SSL(host) as c:
+    #     c.login(user=username, password=password)
+    #     c.append('DRAFTS', '',
+    #              imaplib.Time2Internaldate(time.time()),
+    #              str(msg).encode('utf-8'))
+
+    # print("Email Draft Generated")
+
+    if connection:
+        connection.append('DRAFTS', '',
+             imaplib.Time2Internaldate(time.time()),
+             str(msg).encode('utf-8'))
+        print("Email Draft Generated")
+    else:
+        print("Failed to create draft") 
 def create_pkrt_receipt_email(subject:str, email_from:str, emails_to:list, emails_cc:list, emails_bcc:list, file_tempate:str, receipt_data:list):
     msg = email.message.Message()
     msg["Subject"] = subject
@@ -85,10 +123,19 @@ def create_pkrt_receipt_email(subject:str, email_from:str, emails_to:list, email
             body = body + '\n' + line
 
     msg.set_payload(body)
-    with imaplib.IMAP4_SSL(host) as c:
-        c.login(user=username, password=password)
-        c.append('DRAFTS', '',
-                 imaplib.Time2Internaldate(time.time()),
-                 str(msg).encode('utf-8'))
 
-    print("Email Draft Generated")
+    # with imaplib.IMAP4_SSL(host) as c:
+    #     c.login(user=username, password=password)
+    #     c.append('DRAFTS', '',
+    #              imaplib.Time2Internaldate(time.time()),
+    #              str(msg).encode('utf-8'))
+
+    # print("Email Draft Generated")
+
+    if connection:
+        connection.append('DRAFTS', '',
+             imaplib.Time2Internaldate(time.time()),
+             str(msg).encode('utf-8'))
+        print("Email Draft Generated")
+    else:
+        print("Failed to create draft")
