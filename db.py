@@ -81,7 +81,8 @@ def get_email_address_for_payment(ids):
     query2 = f"select group_concat(CONCAT(' ', first_name)) as `names` from students where active = 1 and id in({ids});"
     cn1 = get_connection(sql_db = schema)
     df1 = get_dataframe(connection=cn1, sql=query1)
-    address = ", ".join(df1["email1"].to_list())
+    address = df1["email1"].to_list()
+    # address = ", ".join(df1["email1"].to_list())
 
     cn2 = get_connection(sql_db = schema)
     df2 = get_dataframe(connection=cn2, sql=query2)
