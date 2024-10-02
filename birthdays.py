@@ -12,7 +12,7 @@ class DataFrameDisplayApp:
     def init_ui(self):
         self.root.title('Club Birthdays')
 
-        self.root.geometry('400x150')
+        self.root.geometry('500x200')
 
         self.text_widget = scrolledtext.ScrolledText(self.root, wrap=tk.WORD)
         self.text_widget.pack(fill=tk.BOTH, expand=True)
