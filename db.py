@@ -78,7 +78,7 @@ def sp_insert_club_payment(IN_IDS, IN_AMOUNT, IN_CALC_TAX, IN_METHOD, IN_TXN_NOT
     execute_sql(connection=cn, sql=query)
 def get_email_address_for_payment(ids):
     query1 = f"SELECT email1 FROM students where id in({ids}) group by email1 limit 1;"
-    query2 = f"select group_concat(CONCAT(' ', first_name)) as `names` from students where active = 1 and id in({ids});"
+    query2 = f"select group_concat(CONCAT(' ', first_name, ' ', last_name)) as `names` from students where active = 1 and id in({ids});"
     cn1 = get_connection(sql_db = schema)
     df1 = get_dataframe(connection=cn1, sql=query1)
     address = df1["email1"].to_list()

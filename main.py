@@ -160,10 +160,11 @@ class MyApp(tk.Tk):
             db.sp_commit_payment_to_db(id, date_till, pay_rate, total, calc_tax, club, txn_note)
         
         payer_address, students_first_names = db.get_email_address_for_payment(", ".join(student_id_list))
+        payer_address_string = ', '.join(payer_address)
         student_ids_formatted = ", ".join(student_id_list)
         receipt_data = [students_first_names, txn_note, total, etransfer]
         
-        db.sp_insert_club_payment(student_ids_formatted, total, calc_tax, etransfer, txn_note, payer_address, club)
+        db.sp_insert_club_payment(student_ids_formatted, total, calc_tax, etransfer, txn_note, payer_address_string, club)
 
         if club == 0:
             email_handler.create_ptkd_receipt_email(

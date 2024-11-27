@@ -96,7 +96,7 @@ def create_pkrt_receipt_email(subject:str, email_from:str, emails_to:list, email
             if i == 4:
                 line = line + time.strftime("%Y/%m/%d")
             elif i == 5:
-                line = line + str(emails_to)
+                line = line + ", ".join(emails_to)
             elif i == 6:
                 line = line + receipt_data[0]
             elif i == 8:
@@ -131,52 +131,3 @@ def create_pkrt_receipt_email(subject:str, email_from:str, emails_to:list, email
         print(draft_response.status_code, "Draft email created successfully.")
     else:
         print(draft_response.status_code, "Failed to create draft email.")
-
-
-
-
-
-# create_ptkd_receipt_email(
-#     subject = "Performance Taekwon-Do - Receipt",
-#     email_from = ["saoneil@live.com"],
-#     emails_to=["saoneil@live.com"],
-#     emails_cc=["saoneil@live.com"], 
-#     emails_bcc=["saoneil@live.com"],
-#     file_tempate = "<path>\\receipt_template_ptkd.txt",
-#     receipt_data = ["sean, sean", "aug 2024", "150", 1]
-# )
-
-# create_pkrt_receipt_email(
-#     subject = "Performance Karate - Receipt",
-#     email_from = ["saoneil@live.com"],
-#     emails_to=["saoneil@live.com"],
-#     emails_cc=["saoneil@live.com"], 
-#     emails_bcc=["saoneil@live.com"],
-#     file_tempate = "<path>\\receipt_template_pkrt.txt",
-#     receipt_data = ["sean, sean", "aug 2024", "150", 1]
-# )
-
-# create_email(
-#     subject="test subject", 
-#     email_from = ["saoneil@live.com"],
-#     emails_to=["saoneil@live.com"],
-#     emails_cc=["saoneil@live.com"], 
-#     emails_bcc=["saoneil@live.com"],
-#     body="test body"
-#     )
-
-# data = {
-#   "calories": [420, 380, 390],
-#   "duration": [50, 40, 45]
-# }
-# #load data into a DataFrame object:
-# df = pd.DataFrame(data)
-# df_string = df.to_string(index=False)
-# create_email(
-#     subject="PMA Payroll",
-#     email_from = ["saoneil@live.com"],
-#     emails_to=["saoneil@live.com"],
-#     emails_cc=["saoneil@live.com"], 
-#     emails_bcc=["saoneil@live.com"],
-#     body = df_string
-#     )  
