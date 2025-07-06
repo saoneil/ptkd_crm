@@ -1,9 +1,10 @@
 import tkinter as tk
 import pandas as pd
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import ttk, messagebox
+from tkinter import simpledialog
 import numpy as np
 from datetime import datetime, timedelta
-import db, email_handler
+import db, email_handler_google
 
 
 window_width = 1275
@@ -96,10 +97,10 @@ class MyApp(tk.Tk):
         df = db.sp_all_emails()
         email_list = df["emails"].to_list()
         # email_list_formatted = "; ".join(email_list)
-        email_handler.create_email(
+        email_handler_google.create_email(
             subject = "Performance MA - Announcement",
-            email_from = ["saoneil@live.com"],
-            emails_to = [None],
+            email_from = "saoneil@live.com",
+            emails_to = [],  # Empty list instead of [None]
             emails_cc = ["tkd.smacrury@gmail.com", "yoosin1995@hotmail.com"],
             emails_bcc = email_list,
             body = """Hello Students/Parents, \n\n\n\n\n\n-------------------\nSean O'Neil\n+1-902-452-7326\nsaoneil@live.com"""
@@ -109,10 +110,10 @@ class MyApp(tk.Tk):
         print(df['emails'].to_string(index=False))
         email_list = df["emails"].to_list()
         # email_list_formatted = "; ".join(email_list)
-        email_handler.create_email(
+        email_handler_google.create_email(
             subject = "Performance Karate - ",
-            email_from = ["saoneil@live.com"],
-            emails_to = [None],
+            email_from = "saoneil@live.com",
+            emails_to = [],
             emails_cc = ["tkd.smacrury@gmail.com", "yoosin1995@hotmail.com"],
             emails_bcc = email_list,
             body = """Hello Karate Students/Parents, \n\n\n\n\n\n-------------------\nSean O'Neil\n+1-902-452-7326\nsaoneil@live.com"""
@@ -121,10 +122,10 @@ class MyApp(tk.Tk):
         df = db.sp_waitlist_emails()
         email_list = df["emails"].to_list()
         # email_list_formatted = "; ".join(email_list)
-        email_handler.create_email(
+        email_handler_google.create_email(
             subject = "Performance MA - Invitation to Classes",
-            email_from = ["saoneil@live.com"],
-            emails_to = [None],
+            email_from = "saoneil@live.com",
+            emails_to = [],
             emails_cc = ["tkd.smacrury@gmail.com"],
             emails_bcc = email_list,
             body = """Hello,\n\nThis email is being sent to those who I added to my wait list for martial arts classes. I would like to invite you to attend your first class on a trial basis on <date>\n\n\n\n-------------------\nSean O'Neil\n+1-902-452-7326\nsaoneil@live.com"""
@@ -167,23 +168,23 @@ class MyApp(tk.Tk):
         db.sp_insert_club_payment(student_ids_formatted, total, calc_tax, etransfer, txn_note, payer_address_string, club)
 
         if club == 0:
-            email_handler.create_ptkd_receipt_email(
+            email_handler_google.create_ptkd_receipt_email(
                 subject = "Performance Taekwon-Do - Receipt",
-                email_from = ["saoneil@live.com"],
+                email_from = "saoneil@live.com",
                 emails_to = payer_address,
-                emails_cc = [None],
+                emails_cc = [],
                 emails_bcc = ["performance_taekwondo@hotmail.com"],
-                file_tempate = "C:\\Users\\saone\\Documents\\PMA\\zflask_app_files\\receipt_template_ptkd.txt",
+                file_template = "C:\\Users\\saone\\Documents\\PMA\\zflask_app_files\\receipt_template_ptkd.txt",
                 receipt_data = receipt_data
             )
         elif club == 1:
-                email_handler.create_pkrt_receipt_email(
+                email_handler_google.create_pkrt_receipt_email(
                 subject = "Performance Karate - Receipt",
-                email_from = ["saoneil@live.com"],
+                email_from = "saoneil@live.com",
                 emails_to = payer_address,
-                emails_cc = [None],
+                emails_cc = [],
                 emails_bcc = ["performance_taekwondo@hotmail.com"],
-                file_tempate = "C:\\Users\\saone\\Documents\\PMA\\zflask_app_files\\receipt_template_pkrt.txt",
+                file_template = "C:\\Users\\saone\\Documents\\PMA\\zflask_app_files\\receipt_template_pkrt.txt",
                 receipt_data = receipt_data
             )
     def save_db_objects(self):
@@ -491,12 +492,12 @@ class MyApp(tk.Tk):
 
         df_string = df.to_string(index=False)
         
-        email_handler.create_email(
+        email_handler_google.create_email(
             subject="PMA Payroll",
-            email_from=["saoneil@live.com"],
+            email_from="saoneil@live.com",
             emails_to=["yoosin1995@hotmail.com"],
-            emails_cc=[None],
-            emails_bcc=[None],
+            emails_cc=[],
+            emails_bcc=[],
             body = df_string
             )  
     def add_admin_expense(self):
@@ -695,10 +696,10 @@ class MyApp(tk.Tk):
             cleaned_email_list = "; ".join(list(set(list(filter(lambda x: x is not None, email_list)))))
             print(cleaned_email_list)
 
-            email_handler.create_email(
+            email_handler_google.create_email(
                 subject="PMA - ", 
-                email_from=["saoneil@live.com"],
-                emails_to=[None],
+                email_from="saoneil@live.com",
+                emails_to=[],
                 emails_cc=["tkd.smacrury@gmail.com"],
                 emails_bcc=email_list,
                 body=""
