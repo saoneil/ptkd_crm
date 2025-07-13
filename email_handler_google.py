@@ -66,7 +66,8 @@ def create_ptkd_receipt_email(subject: str, email_from: str, emails_to: list, em
             elif i == 10:
                 line += "E-Transfer" if receipt_data[3] == 1 else "Cheque/Cash"
             body += '\n' + line
-    create_email(subject, email_from, emails_to, emails_cc, emails_bcc, body)
+    # create_email(subject, email_from, emails_to, emails_cc, emails_bcc, body)
+    create_email(subject, email_from, emails_to, emails_cc, None, body)
 
 def create_pkrt_receipt_email(subject: str, email_from: str, emails_to: list, emails_cc: list, emails_bcc: list, file_template: str, receipt_data: list):
     body = ''
@@ -86,4 +87,5 @@ def create_pkrt_receipt_email(subject: str, email_from: str, emails_to: list, em
             elif i == 10:
                 line += "E-Transfer" if receipt_data[3] == 1 else "Cheque/Cash"
             body += '\n' + line
-    create_email(subject, email_from, emails_to, emails_cc, emails_bcc, body)
+    # create_email(subject, email_from, emails_to, emails_cc, emails_bcc, body)
+    create_email(subject, email_from, emails_to, emails_cc, None, body)
