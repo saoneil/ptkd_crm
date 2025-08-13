@@ -97,7 +97,10 @@ def save_db_objects():
         ("select * from income;", "income.csv"),
         ("select * from instructors;", "instructors.csv"),
         ("select * from rental_hours;", "rental_hours.csv"),
-        ("select * from teaching_hours;", "teaching_hours.csv")
+        ("select * from teaching_hours;", "teaching_hours.csv"),
+        ("select * from club_equipment;", "club_equipment.csv"),
+        ("select * from club_equipment_transactions;", "club_equipment_transactions.csv"),
+        ("select * from club_equipment_stock_orders;", "club_equipment_stock_orders.csv")
     ]
     for query, filename in backup_data:
         cn = get_connection(sql_db = schema)
