@@ -101,7 +101,7 @@ class MyApp(tk.Tk):
             subject = "Performance MA - Announcement",
             email_from = "saoneil@live.com",
             emails_to = [],  # Empty list instead of [None]
-            emails_cc = ["tkd.smacrury@gmail.com", "yoosin1995@hotmail.com"],
+            emails_cc = [],
             emails_bcc = email_list,
             body = """Hello Students/Parents, \n\n\n\n\n\n-------------------\nSean O'Neil\n+1-902-452-7326\nsaoneil@live.com"""
         )
@@ -114,7 +114,7 @@ class MyApp(tk.Tk):
             subject = "Performance Karate - ",
             email_from = "saoneil@live.com",
             emails_to = [],
-            emails_cc = ["tkd.smacrury@gmail.com", "yoosin1995@hotmail.com"],
+            emails_cc = [],
             emails_bcc = email_list,
             body = """Hello Karate Students/Parents, \n\n\n\n\n\n-------------------\nSean O'Neil\n+1-902-452-7326\nsaoneil@live.com"""
         )
@@ -126,7 +126,7 @@ class MyApp(tk.Tk):
             subject = "Performance MA - Invitation to Classes",
             email_from = "saoneil@live.com",
             emails_to = [],
-            emails_cc = ["tkd.smacrury@gmail.com"],
+            emails_cc = [],
             emails_bcc = email_list,
             body = """Hello,\n\nThis email is being sent to those who I added to my wait list for martial arts classes. I would like to invite you to attend your first class on a trial basis on <date>\n\n\n\n-------------------\nSean O'Neil\n+1-902-452-7326\nsaoneil@live.com"""
         )    
@@ -495,7 +495,7 @@ class MyApp(tk.Tk):
         email_handler_google.create_email(
             subject="PMA Payroll",
             email_from="saoneil@live.com",
-            emails_to=["yoosin1995@hotmail.com"],
+            emails_to=[],
             emails_cc=[],
             emails_bcc=[],
             body = df_string
@@ -700,7 +700,7 @@ class MyApp(tk.Tk):
                 subject="PMA - ", 
                 email_from="saoneil@live.com",
                 emails_to=[],
-                emails_cc=["tkd.smacrury@gmail.com"],
+                emails_cc=[],
                 emails_bcc=email_list,
                 body=""
                 )
