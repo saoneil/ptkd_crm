@@ -1,6 +1,6 @@
 import tkinter as tk
-import pandas as pd
 from tkinter import ttk, messagebox
+import pandas as pd
 from tkinter import simpledialog
 import numpy as np
 from datetime import datetime, timedelta
@@ -20,9 +20,11 @@ class MyApp(tk.Tk):
         self.data = {}
         self.data2 = {}
         self.data3 = {}
+        self.data4 = {}
         self.df = pd.DataFrame(self.data)
         self.df2 = pd.DataFrame(self.data2)
         self.df3 = pd.DataFrame(self.data3)
+        self.df4 = pd.DataFrame(self.data4)
 
         self.nb = ttk.Notebook(self, width=window_width, height=window_height)
         self.nb.grid(row=0, column=0)
@@ -38,6 +40,7 @@ class MyApp(tk.Tk):
         self.right_click_menu.add_command(label="Add Profile Comment", command=self.profile_comment_right_click)
         self.tab_frames = []
         self.entry_widgets_search_tab1 = {}
+        self.entry_widgets_search_equipment = {}
         self.entry_widgets_new_student = {}
         self.entry_widget_cancel_rental = {}
         self.entry_widget_add_teaching_hours = {}
@@ -58,11 +61,16 @@ class MyApp(tk.Tk):
 
         self.my_tree = ttk.Treeview(self.right_frame_tab1)
         self.my_tree_admin = ttk.Treeview(self.right_frame_tab4)
+        self.my_tree_equipment = ttk.Treeview(self.right_frame_tab5)
         self.my_tree_testing = ttk.Treeview(self.top_right_frame_tab3)
 
         self.refresh_datagrid(self.my_tree, self.df, self.right_frame_tab1)
         self.refresh_datagrid(self.my_tree_admin, self.df2, self.right_frame_tab4)
+        self.refresh_datagrid(self.my_tree_equipment, self.df4, self.right_frame_tab5)
         self.refresh_datagrid(self.my_tree_testing, self.df3, self.top_right_frame_tab3)
+        
+        # Add context menu for PMA Equipment tab
+        self.setup_equipment_context_menu()
 
     ## DB Operations ##
     ## tab 1 ##
@@ -96,45 +104,103 @@ class MyApp(tk.Tk):
     def draft_email_all_students(self):
         df = db.sp_all_emails()
         email_list = df["emails"].to_list()
-        # email_list_formatted = "; ".join(email_list)
-        email_handler_google.create_email(
-            subject = "Performance MA - Announcement",
-            email_from = "saoneil@live.com",
-            emails_to = [],  # Empty list instead of [None]
-            emails_cc = [],
-            emails_bcc = email_list,
-            body = """Hello Students/Parents, \n\n\n\n\n\n-------------------\nSean O'Neil\n+1-902-452-7326\nsaoneil@live.com"""
-        )
+        
+        # Split email list into batches of 100
+        batch_size = 100
+        email_batches = [email_list[i:i + batch_size] for i in range(0, len(email_list), batch_size)]
+        
+        # Create multiple email drafts if needed
+        for i, batch in enumerate(email_batches):
+            batch_number = i + 1
+            total_batches = len(email_batches)
+            
+            # Create subject with batch info if multiple batches
+            subject = "Performance MA - Announcement"
+            
+            email_handler_google.create_html_email(
+                subject = subject,
+                email_from = "saoneil@live.com",
+                emails_to = [],  # Empty list instead of [None]
+                emails_cc = [],
+                emails_bcc = batch,
+                body = f"""<p>Hello Students/Parents,</p>
+                
+                <p><br><br><br><br></p>
+                
+                <div style="color: #666666; font-size: 12px; margin-top: 20px;">
+                    <p style="margin: 5px 0; font-family: Arial, sans-serif;">
+                        ___________________<br>
+                        <strong>Sean O'Neil</strong><br>
+                        +1-902-452-7326<br>
+                        <a href="mailto:saoneil@live.com" style="color: #666666; text-decoration: none;">saoneil@live.com</a>
+                    </p>
+                </div>"""
+            )
+        
+        # Show confirmation message
+        if total_batches > 1:
+            messagebox.showinfo("Email Drafts Created", 
+                f"Created {total_batches} email drafts due to Gmail's 100 recipient limit.\n"
+                f"Total recipients: {len(email_list)}\n"
+                f"Batch 1: {len(email_batches[0])} recipients\n"
+                f"Batch 2: {len(email_batches[1])} recipients" if total_batches > 1 else "")
+        else:
+            messagebox.showinfo("Email Draft Created", 
+                f"Created 1 email draft with {len(email_list)} recipients.")
     def draft_email_karate_students(self):
         df = db.sp_karate_emails()
         print(df['emails'].to_string(index=False))
         email_list = df["emails"].to_list()
         # email_list_formatted = "; ".join(email_list)
-        email_handler_google.create_email(
-            subject = "Performance Karate - ",
+        email_handler_google.create_html_email(
+            subject = "Performance Karate - Announcement",
             email_from = "saoneil@live.com",
             emails_to = [],
             emails_cc = [],
             emails_bcc = email_list,
-            body = """Hello Karate Students/Parents, \n\n\n\n\n\n-------------------\nSean O'Neil\n+1-902-452-7326\nsaoneil@live.com"""
+            body = """<p>Hello Karate Students/Parents,</p>
+            
+            <p><br><br><br><br></p>
+            
+            <div style="color: #666666; font-size: 12px; margin-top: 20px;">
+                <p style="margin: 5px 0; font-family: Arial, sans-serif;">
+                    ___________________<br>
+                    <strong>Sean O'Neil</strong><br>
+                    +1-902-452-7326<br>
+                    <a href="mailto:saoneil@live.com" style="color: #666666; text-decoration: none;">saoneil@live.com</a>
+                </p>
+            </div>"""
         )
     def draft_email_waitlist_students(self):
         df = db.sp_waitlist_emails()
         email_list = df["emails"].to_list()
         # email_list_formatted = "; ".join(email_list)
-        email_handler_google.create_email(
+        email_handler_google.create_html_email(
             subject = "Performance MA - Invitation to Classes",
             email_from = "saoneil@live.com",
             emails_to = [],
             emails_cc = [],
             emails_bcc = email_list,
-            body = """Hello,\n\nThis email is being sent to those who I added to my wait list for martial arts classes. I would like to invite you to attend your first class on a trial basis on <date>\n\n\n\n-------------------\nSean O'Neil\n+1-902-452-7326\nsaoneil@live.com"""
+            body = """<p>Hello,</p>
+            
+            <p>This email is being sent to those who I added to my wait list for martial arts classes. I would like to invite you to attend your first class on a trial basis on <strong>&lt;date&gt;</strong></p>
+            
+            <p><br><br></p>
+            
+            <div style="color: #666666; font-size: 12px; margin-top: 20px;">
+                <p style="margin: 5px 0; font-family: Arial, sans-serif;">
+                    ___________________<br>
+                    <strong>Sean O'Neil</strong><br>
+                    +1-902-452-7326<br>
+                    <a href="mailto:saoneil@live.com" style="color: #666666; text-decoration: none;">saoneil@live.com</a>
+                </p>
+            </div>"""
         )    
     def commit_payment_to_db(self):
         student_id_list = []
         for field, entry_widget in self.entry_widgets_add_payment.items():
             data = entry_widget.get()
-            if (field == "ID1" or field == "ID2" or field == "ID3"):
+            if (field == "ID1" or field == "ID2" or field == "ID3" or field == "ID4"):
                 if not(data == ""):
                     student_id_list.append(data)
             elif field == "date_till":
@@ -541,6 +607,1199 @@ class MyApp(tk.Tk):
         df = db.sp_projections()
         print(df)
         self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+    ## tab 5 - PMA Equipment methods ##
+    def view_students_equipment(self):
+        df = db.sp_view_active_students()
+        print(df)
+        self.refresh_datagrid_equipment(self.my_tree_equipment, df, self.right_frame_tab5)
+    def search_grid_equipment_command(self):
+        for field, entry_widget in self.entry_widgets_search_equipment.items():
+            data = entry_widget.get()
+            if field == "First Name:":
+                first_name = data
+            elif field == "Last Name:":
+                last_name = data
+            elif field == "Email:":
+                email = data
+        df = db.search_grid_tab1(first_name, last_name, email)
+        self.refresh_datagrid_equipment(self.my_tree_equipment, df, self.right_frame_tab5)
+    def view_equipment_list_equipment(self):
+        df = db.sp_view_club_equipment()
+        print(df)
+        self.refresh_datagrid_equipment(self.my_tree_equipment, df, self.right_frame_tab5)
+        # Clear context menu flag for non-transaction views
+        self.current_equipment_view = None
+    def view_stock_quantities_equipment(self):
+        df = db.sp_club_equipment_remaining_stock()
+        
+        # Convert numeric columns to integers
+        for column in df.columns:
+            if df[column].dtype in ['float64', 'float32', 'int64', 'int32']:
+                # Convert to int, handling NaN values by filling with 0 first
+                df[column] = df[column].fillna(0).astype(int)
+        
+        print(df)
+        self.refresh_datagrid_equipment(self.my_tree_equipment, df, self.right_frame_tab5)
+        # Clear context menu flag for non-transaction views
+        self.current_equipment_view = None
+    def view_transactions_equipment(self):
+        df = db.sp_view_club_equipment_transactions()
+        
+        # Create a copy to track original null values before conversion
+        original_df = df.copy()
+        
+        # Convert numeric columns to integers, excluding timestamp columns
+        for column in df.columns:
+            if df[column].dtype in ['float64', 'float32', 'int64', 'int32']:
+                # Skip timestamp columns (pay_date, paydate, date, etc.)
+                if not any(timestamp_keyword in column.lower() for timestamp_keyword in ['date', 'time', 'timestamp']):
+                    # Convert to int, handling NaN values by filling with 0 first
+                    df[column] = df[column].fillna(0).astype(int)
+        
+        print(df)
+        self.refresh_datagrid_with_coloring(self.my_tree_equipment, df, self.right_frame_tab5, original_df)
+        # Store the dataframe for context menu access
+        self.current_transactions_df = df
+        # Set flag to enable context menu for transactions
+        self.current_equipment_view = 'transactions'
+    def received_and_paid_dialog(self):
+        # Create dialog window
+        dialog = tk.Toplevel(self)
+        dialog.title("Received & Paid - Equipment Payment")
+        dialog.geometry("400x300")
+        dialog.resizable(False, False)
+        
+        # Center the dialog on screen
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        # Calculate center position
+        dialog.update_idletasks()
+        width = dialog.winfo_width()
+        height = dialog.winfo_height()
+        x = (dialog.winfo_screenwidth() // 2) - (width // 2)
+        y = (dialog.winfo_screenheight() // 2) - (height // 2)
+        dialog.geometry(f"{width}x{height}+{x}+{y}")
+        
+        # Main frame
+        main_frame = tk.Frame(dialog)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Student entry with dynamic filtering
+        tk.Label(main_frame, text="Student:").grid(row=0, column=0, sticky='w', pady=(0, 10))
+        student_var = tk.StringVar()
+        student_entry = tk.Entry(main_frame, textvariable=student_var, width=33)
+        student_entry.grid(row=0, column=1, sticky='w', pady=(0, 10))
+        
+        # Create listbox for student selection
+        student_listbox = tk.Listbox(main_frame, height=6, width=33)
+        student_listbox.grid(row=0, column=1, sticky='w', pady=(30, 10))
+        student_listbox.grid_remove()  # Hide initially
+        
+        # Store student data for filtering
+        self.student_data = []
+        # Store equipment data for ID lookup
+        self.equipment_data = []
+        
+        # Equipment dropdown
+        tk.Label(main_frame, text="Equipment:").grid(row=1, column=0, sticky='w', pady=(0, 10))
+        equipment_var = tk.StringVar()
+        equipment_dropdown = ttk.Combobox(main_frame, textvariable=equipment_var, state="readonly", width=30)
+        equipment_dropdown.grid(row=1, column=1, sticky='w', pady=(0, 10))
+        
+        # Quantity entry
+        tk.Label(main_frame, text="Quantity:").grid(row=2, column=0, sticky='w', pady=(0, 10))
+        quantity_var = tk.StringVar(value="1")
+        quantity_entry = tk.Entry(main_frame, textvariable=quantity_var, width=33)
+        quantity_entry.grid(row=2, column=1, sticky='w', pady=(0, 10))
+        
+        # Amount entry
+        tk.Label(main_frame, text="Amount($):").grid(row=3, column=0, sticky='w', pady=(0, 10))
+        amount_var = tk.StringVar()
+        amount_entry = tk.Entry(main_frame, textvariable=amount_var, width=33)
+        amount_entry.grid(row=3, column=1, sticky='w', pady=(0, 10))
+        
+        # Load data into dropdowns
+        try:
+            students_df = db.get_all_students_for_dropdown()
+            # Store student data with ID for backend use
+            self.student_data = [{'id': row['id'], 'name': row['name']} for _, row in students_df.iterrows()]
+            # Set initial values (just names for display)
+            student_names = [student['name'] for student in self.student_data]
+            # Populate the listbox initially
+            for student_name in student_names:
+                student_listbox.insert(tk.END, student_name)
+            
+            equipment_df = db.get_all_equipment_for_dropdown()
+            # Store equipment data with ID for backend use
+            self.equipment_data = [{'id': row['id'], 'description': row['item_description']} for _, row in equipment_df.iterrows()]
+            # Set initial values (just descriptions for display)
+            equipment_descriptions = [equipment['description'] for equipment in self.equipment_data]
+            equipment_dropdown['values'] = equipment_descriptions
+        except Exception as e:
+            tk.messagebox.showerror("Error", f"Failed to load data: {str(e)}")
+            dialog.destroy()
+            return
+        
+        # Add filtering functionality to student entry
+        def filter_students():
+            # Get the current text in the entry
+            typed_text = student_var.get().lower()
+            
+            # Clear the listbox
+            student_listbox.delete(0, tk.END)
+            
+            # Filter students based on typed text
+            if typed_text:
+                filtered_students = [student['name'] for student in self.student_data 
+                                   if typed_text in student['name'].lower()]
+            else:
+                filtered_students = [student['name'] for student in self.student_data]
+            
+            # Add filtered students to listbox
+            for student_name in filtered_students:
+                student_listbox.insert(tk.END, student_name)
+            
+            # Show listbox if there are results
+            if filtered_students:
+                student_listbox.grid()
+                # Auto-select if only one match
+                if len(filtered_students) == 1:
+                    student_listbox.selection_set(0)
+            else:
+                student_listbox.grid_remove()
+        
+        def on_student_select(event=None):
+            # When a student is selected from listbox
+            selection = student_listbox.curselection()
+            if selection:
+                selected_name = student_listbox.get(selection[0])
+                student_var.set(selected_name)
+                student_listbox.grid_remove()
+        
+        def on_student_click(event):
+            # Single-click selection
+            on_student_select()
+        
+        def on_student_key_press(event):
+            # Handle keyboard navigation
+            if event.keysym == 'Return':
+                on_student_select()
+            elif event.keysym == 'Escape':
+                student_listbox.grid_remove()
+            elif event.keysym == 'Tab':
+                # Auto-select if only one match
+                if student_listbox.size() == 1:
+                    on_student_select()
+            elif event.keysym in ['Up', 'Down']:
+                # Allow normal listbox navigation
+                pass
+            else:
+                # For other keys, let the entry handle them
+                return
+        
+        def on_student_focus_in(event):
+            # Show all students when entry gets focus
+            filter_students()
+        
+        def on_student_focus_out(event):
+            # Hide listbox when entry loses focus (with delay)
+            dialog.after(150, lambda: student_listbox.grid_remove())
+        
+        # Bind events
+        student_entry.bind('<KeyRelease>', lambda e: filter_students())
+        student_entry.bind('<KeyPress>', on_student_key_press)
+        student_entry.bind('<FocusIn>', on_student_focus_in)
+        student_entry.bind('<FocusOut>', on_student_focus_out)
+        student_listbox.bind('<Button-1>', on_student_click)
+        student_listbox.bind('<Double-Button-1>', on_student_select)
+        student_listbox.bind('<Return>', on_student_select)
+        student_listbox.bind('<KeyPress>', on_student_key_press)
+        
+        # Validation and submission function
+        def validate_and_submit():
+            # Validate student selection
+            if not student_var.get():
+                tk.messagebox.showerror("Validation Error", "Please select a student.")
+                return
+            
+            # Validate equipment selection
+            if not equipment_var.get():
+                tk.messagebox.showerror("Validation Error", "Please select equipment.")
+                return
+            
+            # Validate quantity
+            try:
+                quantity = int(quantity_var.get())
+                if quantity <= 0:
+                    raise ValueError("Quantity must be positive")
+            except ValueError:
+                tk.messagebox.showerror("Validation Error", "Please enter a valid quantity (positive integer).")
+                return
+            
+            # Validate amount
+            try:
+                amount = float(amount_var.get())
+                if amount < 0:
+                    raise ValueError("Amount must be non-negative")
+            except ValueError:
+                tk.messagebox.showerror("Validation Error", "Please enter a valid amount (number >= 0).")
+                return
+            
+            # Extract IDs from dropdown selections
+            # Find student ID by matching the selected name
+            selected_student_name = student_var.get()
+            student_id = None
+            for student in self.student_data:
+                if student['name'] == selected_student_name:
+                    student_id = student['id']
+                    break
+            
+            if student_id is None:
+                tk.messagebox.showerror("Validation Error", "Selected student not found.")
+                return
+            
+            # Find equipment ID by matching the selected description
+            selected_equipment_description = equipment_var.get()
+            equipment_id = None
+            for equipment in self.equipment_data:
+                if equipment['description'] == selected_equipment_description:
+                    equipment_id = equipment['id']
+                    break
+            
+            if equipment_id is None:
+                tk.messagebox.showerror("Validation Error", "Selected equipment not found.")
+                return
+            
+            # Get current date
+            from datetime import datetime
+            paydate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            try:
+                # Call the stored procedure
+                db.sp_insert_club_equipment_payment(student_id, equipment_id, quantity, amount, 1, paydate)
+                tk.messagebox.showinfo("Success", "Payment recorded successfully!")
+                dialog.destroy()
+            except Exception as e:
+                tk.messagebox.showerror("Database Error", f"Failed to record payment: {str(e)}")
+        
+        # Buttons frame
+        button_frame = tk.Frame(main_frame)
+        button_frame.grid(row=4, column=0, columnspan=2, pady=(20, 0))
+        
+        # Confirm button
+        confirm_button = tk.Button(button_frame, text="Confirm", command=validate_and_submit, width=10)
+        confirm_button.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Cancel button
+        cancel_button = tk.Button(button_frame, text="Cancel", command=dialog.destroy, width=10)
+        cancel_button.pack(side=tk.LEFT)
+    def received_not_paid_dialog(self):
+        # Create dialog window
+        dialog = tk.Toplevel(self)
+        dialog.title("Received, Not Paid - Equipment Payment")
+        dialog.geometry("400x300")
+        dialog.resizable(False, False)
+        
+        # Center the dialog on screen
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        # Calculate center position
+        dialog.update_idletasks()
+        width = dialog.winfo_width()
+        height = dialog.winfo_height()
+        x = (dialog.winfo_screenwidth() // 2) - (width // 2)
+        y = (dialog.winfo_screenheight() // 2) - (height // 2)
+        dialog.geometry(f"{width}x{height}+{x}+{y}")
+        
+        # Main frame
+        main_frame = tk.Frame(dialog)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Student entry with dynamic filtering
+        tk.Label(main_frame, text="Student:").grid(row=0, column=0, sticky='w', pady=(0, 10))
+        student_var = tk.StringVar()
+        student_entry = tk.Entry(main_frame, textvariable=student_var, width=33)
+        student_entry.grid(row=0, column=1, sticky='w', pady=(0, 10))
+        
+        # Create listbox for student selection
+        student_listbox = tk.Listbox(main_frame, height=6, width=33)
+        student_listbox.grid(row=0, column=1, sticky='w', pady=(30, 10))
+        student_listbox.grid_remove()  # Hide initially
+        
+        # Store student data for filtering
+        self.student_data = []
+        # Store equipment data for ID lookup
+        self.equipment_data = []
+        
+        # Equipment dropdown
+        tk.Label(main_frame, text="Equipment:").grid(row=1, column=0, sticky='w', pady=(0, 10))
+        equipment_var = tk.StringVar()
+        equipment_dropdown = ttk.Combobox(main_frame, textvariable=equipment_var, state="readonly", width=30)
+        equipment_dropdown.grid(row=1, column=1, sticky='w', pady=(0, 10))
+        
+        # Quantity entry
+        tk.Label(main_frame, text="Quantity:").grid(row=2, column=0, sticky='w', pady=(0, 10))
+        quantity_var = tk.StringVar(value="1")
+        quantity_entry = tk.Entry(main_frame, textvariable=quantity_var, width=33)
+        quantity_entry.grid(row=2, column=1, sticky='w', pady=(0, 10))
+        
+        # Amount entry (defaults to 0 for "Not Paid")
+        tk.Label(main_frame, text="Amount($):").grid(row=3, column=0, sticky='w', pady=(0, 10))
+        amount_var = tk.StringVar(value="0")
+        amount_entry = tk.Entry(main_frame, textvariable=amount_var, width=33)
+        amount_entry.grid(row=3, column=1, sticky='w', pady=(0, 10))
+        
+        # Load data into dropdowns
+        try:
+            students_df = db.get_all_students_for_dropdown()
+            # Store student data with ID for backend use
+            self.student_data = [{'id': row['id'], 'name': row['name']} for _, row in students_df.iterrows()]
+            # Set initial values (just names for display)
+            student_names = [student['name'] for student in self.student_data]
+            # Populate the listbox initially
+            for student_name in student_names:
+                student_listbox.insert(tk.END, student_name)
+            
+            equipment_df = db.get_all_equipment_for_dropdown()
+            # Store equipment data with ID for backend use
+            self.equipment_data = [{'id': row['id'], 'description': row['item_description']} for _, row in equipment_df.iterrows()]
+            # Set initial values (just descriptions for display)
+            equipment_descriptions = [equipment['description'] for equipment in self.equipment_data]
+            equipment_dropdown['values'] = equipment_descriptions
+        except Exception as e:
+            tk.messagebox.showerror("Error", f"Failed to load data: {str(e)}")
+            dialog.destroy()
+            return
+        
+        # Add filtering functionality to student entry
+        def filter_students():
+            # Get the current text in the entry
+            typed_text = student_var.get().lower()
+            
+            # Clear the listbox
+            student_listbox.delete(0, tk.END)
+            
+            # Filter students based on typed text
+            if typed_text:
+                filtered_students = [student['name'] for student in self.student_data 
+                                   if typed_text in student['name'].lower()]
+            else:
+                filtered_students = [student['name'] for student in self.student_data]
+            
+            # Add filtered students to listbox
+            for student_name in filtered_students:
+                student_listbox.insert(tk.END, student_name)
+            
+            # Show listbox if there are results
+            if filtered_students:
+                student_listbox.grid()
+                # Auto-select if only one match
+                if len(filtered_students) == 1:
+                    student_listbox.selection_set(0)
+            else:
+                student_listbox.grid_remove()
+        
+        def on_student_select(event=None):
+            # When a student is selected from listbox
+            selection = student_listbox.curselection()
+            if selection:
+                selected_name = student_listbox.get(selection[0])
+                student_var.set(selected_name)
+                student_listbox.grid_remove()
+        
+        def on_student_click(event):
+            # Single-click selection
+            on_student_select()
+        
+        def on_student_key_press(event):
+            # Handle keyboard navigation
+            if event.keysym == 'Return':
+                on_student_select()
+            elif event.keysym == 'Escape':
+                student_listbox.grid_remove()
+            elif event.keysym == 'Tab':
+                # Auto-select if only one match
+                if student_listbox.size() == 1:
+                    on_student_select()
+            elif event.keysym in ['Up', 'Down']:
+                # Allow normal listbox navigation
+                pass
+            else:
+                # For other keys, let the entry handle them
+                return
+        
+        def on_student_focus_in(event):
+            # Show all students when entry gets focus
+            filter_students()
+        
+        def on_student_focus_out(event):
+            # Hide listbox when entry loses focus (with delay)
+            dialog.after(150, lambda: student_listbox.grid_remove())
+        
+        # Bind events
+        student_entry.bind('<KeyRelease>', lambda e: filter_students())
+        student_entry.bind('<KeyPress>', on_student_key_press)
+        student_entry.bind('<FocusIn>', on_student_focus_in)
+        student_entry.bind('<FocusOut>', on_student_focus_out)
+        student_listbox.bind('<Button-1>', on_student_click)
+        student_listbox.bind('<Double-Button-1>', on_student_select)
+        student_listbox.bind('<Return>', on_student_select)
+        student_listbox.bind('<KeyPress>', on_student_key_press)
+        
+        # Validation and submission function
+        def validate_and_submit():
+            # Validate student selection
+            if not student_var.get():
+                tk.messagebox.showerror("Validation Error", "Please select a student.")
+                return
+            
+            # Validate equipment selection
+            if not equipment_var.get():
+                tk.messagebox.showerror("Validation Error", "Please select equipment.")
+                return
+            
+            # Validate quantity
+            try:
+                quantity = int(quantity_var.get())
+                if quantity <= 0:
+                    raise ValueError("Quantity must be positive")
+            except ValueError:
+                tk.messagebox.showerror("Validation Error", "Please enter a valid quantity (positive integer).")
+                return
+            
+            # Validate amount (should be 0 for "Not Paid")
+            try:
+                amount = float(amount_var.get())
+                if amount < 0:
+                    raise ValueError("Amount must be non-negative")
+            except ValueError:
+                tk.messagebox.showerror("Validation Error", "Please enter a valid amount (number >= 0).")
+                return
+            
+            # Extract IDs from dropdown selections
+            # Find student ID by matching the selected name
+            selected_student_name = student_var.get()
+            student_id = None
+            for student in self.student_data:
+                if student['name'] == selected_student_name:
+                    student_id = student['id']
+                    break
+            
+            if student_id is None:
+                tk.messagebox.showerror("Validation Error", "Selected student not found.")
+                return
+            
+            # Find equipment ID by matching the selected description
+            selected_equipment_description = equipment_var.get()
+            equipment_id = None
+            for equipment in self.equipment_data:
+                if equipment['description'] == selected_equipment_description:
+                    equipment_id = equipment['id']
+                    break
+            
+            if equipment_id is None:
+                tk.messagebox.showerror("Validation Error", "Selected equipment not found.")
+                return
+            
+            try:
+                # Call the stored procedure with paid_bool=0 and paydate=null
+                db.sp_insert_club_equipment_payment(student_id, equipment_id, quantity, amount, 0, None)
+                tk.messagebox.showinfo("Success", "Equipment received (not paid) recorded successfully!")
+                dialog.destroy()
+            except Exception as e:
+                tk.messagebox.showerror("Database Error", f"Failed to record equipment: {str(e)}")
+        
+        # Buttons frame
+        button_frame = tk.Frame(main_frame)
+        button_frame.grid(row=4, column=0, columnspan=2, pady=(20, 0))
+        
+        # Confirm button
+        confirm_button = tk.Button(button_frame, text="Confirm", command=validate_and_submit, width=10)
+        confirm_button.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Cancel button
+        cancel_button = tk.Button(button_frame, text="Cancel", command=dialog.destroy, width=10)
+        cancel_button.pack(side=tk.LEFT)
+    def paid_not_received_dialog(self):
+        # Create dialog window
+        dialog = tk.Toplevel(self)
+        dialog.title("Paid, Not Received - Equipment Payment")
+        dialog.geometry("400x300")
+        dialog.resizable(False, False)
+        
+        # Center the dialog on screen
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        # Calculate center position
+        dialog.update_idletasks()
+        width = dialog.winfo_width()
+        height = dialog.winfo_height()
+        x = (dialog.winfo_screenwidth() // 2) - (width // 2)
+        y = (dialog.winfo_screenheight() // 2) - (height // 2)
+        dialog.geometry(f"{width}x{height}+{x}+{y}")
+        
+        # Main frame
+        main_frame = tk.Frame(dialog)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Student entry with dynamic filtering
+        tk.Label(main_frame, text="Student:").grid(row=0, column=0, sticky='w', pady=(0, 10))
+        student_var = tk.StringVar()
+        student_entry = tk.Entry(main_frame, textvariable=student_var, width=33)
+        student_entry.grid(row=0, column=1, sticky='w', pady=(0, 10))
+        
+        # Create listbox for student selection
+        student_listbox = tk.Listbox(main_frame, height=6, width=33)
+        student_listbox.grid(row=0, column=1, sticky='w', pady=(30, 10))
+        student_listbox.grid_remove()  # Hide initially
+        
+        # Store student data for filtering
+        self.student_data = []
+        # Store equipment data for ID lookup
+        self.equipment_data = []
+        
+        # Equipment dropdown (optional)
+        tk.Label(main_frame, text="Equipment (optional):").grid(row=1, column=0, sticky='w', pady=(0, 10))
+        equipment_var = tk.StringVar()
+        equipment_dropdown = ttk.Combobox(main_frame, textvariable=equipment_var, state="readonly", width=30)
+        equipment_dropdown.grid(row=1, column=1, sticky='w', pady=(0, 10))
+        
+        # Quantity entry
+        tk.Label(main_frame, text="Quantity:").grid(row=2, column=0, sticky='w', pady=(0, 10))
+        quantity_var = tk.StringVar(value="1")
+        quantity_entry = tk.Entry(main_frame, textvariable=quantity_var, width=33)
+        quantity_entry.grid(row=2, column=1, sticky='w', pady=(0, 10))
+        
+        # Amount entry (defaults to 50 for "Paid, Not Received")
+        tk.Label(main_frame, text="Amount($):").grid(row=3, column=0, sticky='w', pady=(0, 10))
+        amount_var = tk.StringVar(value="50")
+        amount_entry = tk.Entry(main_frame, textvariable=amount_var, width=33)
+        amount_entry.grid(row=3, column=1, sticky='w', pady=(0, 10))
+        
+        # Load data into dropdowns
+        try:
+            students_df = db.get_all_students_for_dropdown()
+            # Store student data with ID for backend use
+            self.student_data = [{'id': row['id'], 'name': row['name']} for _, row in students_df.iterrows()]
+            # Set initial values (just names for display)
+            student_names = [student['name'] for student in self.student_data]
+            # Populate the listbox initially
+            for student_name in student_names:
+                student_listbox.insert(tk.END, student_name)
+            
+            equipment_df = db.get_all_equipment_for_dropdown()
+            # Store equipment data with ID for backend use
+            self.equipment_data = [{'id': row['id'], 'description': row['item_description']} for _, row in equipment_df.iterrows()]
+            # Set initial values (just descriptions for display)
+            equipment_descriptions = [equipment['description'] for equipment in self.equipment_data]
+            equipment_dropdown['values'] = equipment_descriptions
+        except Exception as e:
+            tk.messagebox.showerror("Error", f"Failed to load data: {str(e)}")
+            dialog.destroy()
+            return
+        
+        # Add filtering functionality to student entry
+        def filter_students():
+            # Get the current text in the entry
+            typed_text = student_var.get().lower()
+            
+            # Clear the listbox
+            student_listbox.delete(0, tk.END)
+            
+            # Filter students based on typed text
+            if typed_text:
+                filtered_students = [student['name'] for student in self.student_data 
+                                   if typed_text in student['name'].lower()]
+            else:
+                filtered_students = [student['name'] for student in self.student_data]
+            
+            # Add filtered students to listbox
+            for student_name in filtered_students:
+                student_listbox.insert(tk.END, student_name)
+            
+            # Show listbox if there are results
+            if filtered_students:
+                student_listbox.grid()
+                # Auto-select if only one match
+                if len(filtered_students) == 1:
+                    student_listbox.selection_set(0)
+            else:
+                student_listbox.grid_remove()
+        
+        def on_student_select(event=None):
+            # When a student is selected from listbox
+            selection = student_listbox.curselection()
+            if selection:
+                selected_name = student_listbox.get(selection[0])
+                student_var.set(selected_name)
+                student_listbox.grid_remove()
+        
+        def on_student_click(event):
+            # Single-click selection
+            on_student_select()
+        
+        def on_student_key_press(event):
+            # Handle keyboard navigation
+            if event.keysym == 'Return':
+                on_student_select()
+            elif event.keysym == 'Escape':
+                student_listbox.grid_remove()
+            elif event.keysym == 'Tab':
+                # Auto-select if only one match
+                if student_listbox.size() == 1:
+                    on_student_select()
+            elif event.keysym in ['Up', 'Down']:
+                # Allow normal listbox navigation
+                pass
+            else:
+                # For other keys, let the entry handle them
+                return
+        
+        def on_student_focus_in(event):
+            # Show all students when entry gets focus
+            filter_students()
+        
+        def on_student_focus_out(event):
+            # Hide listbox when entry loses focus (with delay)
+            dialog.after(150, lambda: student_listbox.grid_remove())
+        
+        # Bind events
+        student_entry.bind('<KeyRelease>', lambda e: filter_students())
+        student_entry.bind('<KeyPress>', on_student_key_press)
+        student_entry.bind('<FocusIn>', on_student_focus_in)
+        student_entry.bind('<FocusOut>', on_student_focus_out)
+        student_listbox.bind('<Button-1>', on_student_click)
+        student_listbox.bind('<Double-Button-1>', on_student_select)
+        student_listbox.bind('<Return>', on_student_select)
+        student_listbox.bind('<KeyPress>', on_student_key_press)
+        
+        # Validation and submission function
+        def validate_and_submit():
+            # Validate student selection
+            if not student_var.get():
+                tk.messagebox.showerror("Validation Error", "Please select a student.")
+                return
+            
+            # Equipment selection is optional for "Paid, Not Received"
+            # No validation needed - will pass null if not selected
+            
+            # Validate quantity
+            try:
+                quantity = int(quantity_var.get())
+                if quantity <= 0:
+                    raise ValueError("Quantity must be positive")
+            except ValueError:
+                tk.messagebox.showerror("Validation Error", "Please enter a valid quantity (positive integer).")
+                return
+            
+            # Validate amount (defaults to 50 for "Paid, Not Received")
+            try:
+                amount = float(amount_var.get())
+                if amount < 0:
+                    raise ValueError("Amount must be non-negative")
+            except ValueError:
+                tk.messagebox.showerror("Validation Error", "Please enter a valid amount (number >= 0).")
+                return
+            
+            # Extract IDs from dropdown selections
+            # Find student ID by matching the selected name
+            selected_student_name = student_var.get()
+            student_id = None
+            for student in self.student_data:
+                if student['name'] == selected_student_name:
+                    student_id = student['id']
+                    break
+            
+            if student_id is None:
+                tk.messagebox.showerror("Validation Error", "Selected student not found.")
+                return
+            
+            # Find equipment ID by matching the selected description (optional)
+            selected_equipment_description = equipment_var.get()
+            equipment_id = None
+            if selected_equipment_description:  # Only look up if equipment is selected
+                for equipment in self.equipment_data:
+                    if equipment['description'] == selected_equipment_description:
+                        equipment_id = equipment['id']
+                        break
+            
+            try:
+                # Call the stored procedure with paid_bool=1 and paydate=now()
+                from datetime import datetime
+                paydate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                # Pass null for equipment_id if no equipment selected
+                if equipment_id is None:
+                    db.sp_insert_club_equipment_payment(student_id, None, quantity, amount, 1, paydate)
+                else:
+                    db.sp_insert_club_equipment_payment(student_id, equipment_id, quantity, amount, 1, paydate)
+                tk.messagebox.showinfo("Success", "Equipment payment (not received) recorded successfully!")
+                dialog.destroy()
+            except Exception as e:
+                tk.messagebox.showerror("Database Error", f"Failed to record payment: {str(e)}")
+        
+        # Buttons frame
+        button_frame = tk.Frame(main_frame)
+        button_frame.grid(row=4, column=0, columnspan=2, pady=(20, 0))
+        
+        # Confirm button
+        confirm_button = tk.Button(button_frame, text="Confirm", command=validate_and_submit, width=10)
+        confirm_button.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Cancel button
+        cancel_button = tk.Button(button_frame, text="Cancel", command=dialog.destroy, width=10)
+        cancel_button.pack(side=tk.LEFT)
+    def belt_testing_dialog(self):
+        # Create dialog window
+        dialog = tk.Toplevel(self)
+        dialog.title("Belt, Testing - Equipment Payment")
+        dialog.geometry("400x300")
+        dialog.resizable(False, False)
+        
+        # Center the dialog on screen
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        # Calculate center position
+        dialog.update_idletasks()
+        width = dialog.winfo_width()
+        height = dialog.winfo_height()
+        x = (dialog.winfo_screenwidth() // 2) - (width // 2)
+        y = (dialog.winfo_screenheight() // 2) - (height // 2)
+        dialog.geometry(f"{width}x{height}+{x}+{y}")
+        
+        # Main frame
+        main_frame = tk.Frame(dialog)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Student entry with dynamic filtering
+        tk.Label(main_frame, text="Student:").grid(row=0, column=0, sticky='w', pady=(0, 10))
+        student_var = tk.StringVar()
+        student_entry = tk.Entry(main_frame, textvariable=student_var, width=33)
+        student_entry.grid(row=0, column=1, sticky='w', pady=(0, 10))
+        
+        # Create listbox for student selection
+        student_listbox = tk.Listbox(main_frame, height=6, width=33)
+        student_listbox.grid(row=0, column=1, sticky='w', pady=(30, 10))
+        student_listbox.grid_remove()  # Hide initially
+        
+        # Store student data for filtering
+        self.student_data = []
+        # Store equipment data for ID lookup
+        self.equipment_data = []
+        
+        # Equipment dropdown (belt items only)
+        tk.Label(main_frame, text="Belt Equipment:").grid(row=1, column=0, sticky='w', pady=(0, 10))
+        equipment_var = tk.StringVar()
+        equipment_dropdown = ttk.Combobox(main_frame, textvariable=equipment_var, state="readonly", width=30)
+        equipment_dropdown.grid(row=1, column=1, sticky='w', pady=(0, 10))
+        
+        # Quantity entry
+        tk.Label(main_frame, text="Quantity:").grid(row=2, column=0, sticky='w', pady=(0, 10))
+        quantity_var = tk.StringVar(value="1")
+        quantity_entry = tk.Entry(main_frame, textvariable=quantity_var, width=33)
+        quantity_entry.grid(row=2, column=1, sticky='w', pady=(0, 10))
+        
+        # Amount entry (defaults to 0 for "Belt, Testing")
+        tk.Label(main_frame, text="Amount($):").grid(row=3, column=0, sticky='w', pady=(0, 10))
+        amount_var = tk.StringVar(value="0")
+        amount_entry = tk.Entry(main_frame, textvariable=amount_var, width=33)
+        amount_entry.grid(row=3, column=1, sticky='w', pady=(0, 10))
+        
+        # Load data into dropdowns
+        try:
+            students_df = db.get_all_students_for_dropdown()
+            # Store student data with ID for backend use
+            self.student_data = [{'id': row['id'], 'name': row['name']} for _, row in students_df.iterrows()]
+            # Set initial values (just names for display)
+            student_names = [student['name'] for student in self.student_data]
+            # Populate the listbox initially
+            for student_name in student_names:
+                student_listbox.insert(tk.END, student_name)
+            
+            # Load belt equipment only
+            equipment_df = db.get_belt_equipment_for_dropdown()
+            # Store equipment data with ID for backend use
+            self.equipment_data = [{'id': row['id'], 'description': row['item_description']} for _, row in equipment_df.iterrows()]
+            # Set initial values (just descriptions for display)
+            equipment_descriptions = [equipment['description'] for equipment in self.equipment_data]
+            equipment_dropdown['values'] = equipment_descriptions
+        except Exception as e:
+            tk.messagebox.showerror("Error", f"Failed to load data: {str(e)}")
+            dialog.destroy()
+            return
+        
+        # Add filtering functionality to student entry
+        def filter_students():
+            # Get the current text in the entry
+            typed_text = student_var.get().lower()
+            
+            # Clear the listbox
+            student_listbox.delete(0, tk.END)
+            
+            # Filter students based on typed text
+            if typed_text:
+                filtered_students = [student['name'] for student in self.student_data 
+                                   if typed_text in student['name'].lower()]
+            else:
+                filtered_students = [student['name'] for student in self.student_data]
+            
+            # Add filtered students to listbox
+            for student_name in filtered_students:
+                student_listbox.insert(tk.END, student_name)
+            
+            # Show listbox if there are results
+            if filtered_students:
+                student_listbox.grid()
+                # Auto-select if only one match
+                if len(filtered_students) == 1:
+                    student_listbox.selection_set(0)
+            else:
+                student_listbox.grid_remove()
+        
+        def on_student_select(event=None):
+            # When a student is selected from listbox
+            selection = student_listbox.curselection()
+            if selection:
+                selected_name = student_listbox.get(selection[0])
+                student_var.set(selected_name)
+                student_listbox.grid_remove()
+        
+        def on_student_click(event):
+            # Single-click selection
+            on_student_select()
+        
+        def on_student_key_press(event):
+            # Handle keyboard navigation
+            if event.keysym == 'Return':
+                on_student_select()
+            elif event.keysym == 'Escape':
+                student_listbox.grid_remove()
+            elif event.keysym == 'Tab':
+                # Auto-select if only one match
+                if student_listbox.size() == 1:
+                    on_student_select()
+            elif event.keysym in ['Up', 'Down']:
+                # Allow normal listbox navigation
+                pass
+            else:
+                # For other keys, let the entry handle them
+                return
+        
+        def on_student_focus_in(event):
+            # Show all students when entry gets focus
+            filter_students()
+        
+        def on_student_focus_out(event):
+            # Hide listbox when entry loses focus (with delay)
+            dialog.after(150, lambda: student_listbox.grid_remove())
+        
+        # Bind events
+        student_entry.bind('<KeyRelease>', lambda e: filter_students())
+        student_entry.bind('<KeyPress>', on_student_key_press)
+        student_entry.bind('<FocusIn>', on_student_focus_in)
+        student_entry.bind('<FocusOut>', on_student_focus_out)
+        student_listbox.bind('<Button-1>', on_student_click)
+        student_listbox.bind('<Double-Button-1>', on_student_select)
+        student_listbox.bind('<Return>', on_student_select)
+        student_listbox.bind('<KeyPress>', on_student_key_press)
+        
+        # Validation and submission function
+        def validate_and_submit():
+            # Validate student selection
+            if not student_var.get():
+                tk.messagebox.showerror("Validation Error", "Please select a student.")
+                return
+            
+            # Validate equipment selection
+            if not equipment_var.get():
+                tk.messagebox.showerror("Validation Error", "Please select belt equipment.")
+                return
+            
+            # Validate quantity
+            try:
+                quantity = int(quantity_var.get())
+                if quantity <= 0:
+                    raise ValueError("Quantity must be positive")
+            except ValueError:
+                tk.messagebox.showerror("Validation Error", "Please enter a valid quantity (positive integer).")
+                return
+            
+            # Validate amount (defaults to 0 for "Belt, Testing")
+            try:
+                amount = float(amount_var.get())
+                if amount < 0:
+                    raise ValueError("Amount must be non-negative")
+            except ValueError:
+                tk.messagebox.showerror("Validation Error", "Please enter a valid amount (number >= 0).")
+                return
+            
+            # Extract IDs from dropdown selections
+            # Find student ID by matching the selected name
+            selected_student_name = student_var.get()
+            student_id = None
+            for student in self.student_data:
+                if student['name'] == selected_student_name:
+                    student_id = student['id']
+                    break
+            
+            if student_id is None:
+                tk.messagebox.showerror("Validation Error", "Selected student not found.")
+                return
+            
+            # Find equipment ID by matching the selected description
+            selected_equipment_description = equipment_var.get()
+            equipment_id = None
+            for equipment in self.equipment_data:
+                if equipment['description'] == selected_equipment_description:
+                    equipment_id = equipment['id']
+                    break
+            
+            if equipment_id is None:
+                tk.messagebox.showerror("Validation Error", "Selected belt equipment not found.")
+                return
+            
+            try:
+                # Call the stored procedure with paid_bool=1 and paydate=now()
+                from datetime import datetime
+                paydate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                db.sp_insert_club_equipment_payment(student_id, equipment_id, quantity, amount, 1, paydate)
+                tk.messagebox.showinfo("Success", "Belt testing payment recorded successfully!")
+                dialog.destroy()
+            except Exception as e:
+                tk.messagebox.showerror("Database Error", f"Failed to record payment: {str(e)}")
+        
+        # Buttons frame
+        button_frame = tk.Frame(main_frame)
+        button_frame.grid(row=4, column=0, columnspan=2, pady=(20, 0))
+        
+        # Confirm button
+        confirm_button = tk.Button(button_frame, text="Confirm", command=validate_and_submit, width=10)
+        confirm_button.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Cancel button
+        cancel_button = tk.Button(button_frame, text="Cancel", command=dialog.destroy, width=10)
+        cancel_button.pack(side=tk.LEFT)
+    def setup_equipment_context_menu(self):
+        # Create context menu for equipment treeview
+        self.equipment_context_menu = tk.Menu(self, tearoff=0)
+        self.equipment_context_menu.add_command(label="Add Payment", command=self.add_payment_dialog)
+        self.equipment_context_menu.add_command(label="Add Item", command=self.add_item_dialog)
+        
+        # Bind right-click event to treeview
+        self.my_tree_equipment.bind("<Button-3>", self.show_equipment_context_menu)
+    def show_equipment_context_menu(self, event):
+        # Only show context menu if we're in the transactions view
+        if hasattr(self, 'current_equipment_view') and self.current_equipment_view == 'transactions':
+            # Get the item under the cursor
+            item = self.my_tree_equipment.identify_row(event.y)
+            if item:
+                # Select the item and show context menu
+                self.my_tree_equipment.selection_set(item)
+                self.selected_transaction_id = self.get_transaction_id_from_selection()
+                if self.selected_transaction_id:
+                    self.equipment_context_menu.post(event.x_root, event.y_root)
+    def get_transaction_id_from_selection(self):
+        # Get the selected item
+        selection = self.my_tree_equipment.selection()
+        if not selection:
+            return None
+        
+        # Get the values from the selected row
+        item = selection[0]
+        values = self.my_tree_equipment.item(item, 'values')
+        
+        # For transactions view, the ID is now in the first column (index 0)
+        # The transactions view shows: id, name, item_id, qty, amount_paid, pay_date
+        if len(values) > 0:
+            try:
+                # Get the ID from the first column
+                return int(values[0])
+            except (ValueError, IndexError):
+                return None
+        return None
+    def add_payment_dialog(self):
+        if not hasattr(self, 'selected_transaction_id') or not self.selected_transaction_id:
+            tk.messagebox.showerror("Error", "No transaction selected.")
+            return
+        
+        # Create dialog window
+        dialog = tk.Toplevel(self)
+        dialog.title("Add Payment")
+        dialog.geometry("300x150")
+        dialog.resizable(False, False)
+        
+        # Center the dialog on screen
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        # Calculate center position
+        dialog.update_idletasks()
+        width = dialog.winfo_width()
+        height = dialog.winfo_height()
+        x = (dialog.winfo_screenwidth() // 2) - (width // 2)
+        y = (dialog.winfo_screenheight() // 2) - (height // 2)
+        dialog.geometry(f"{width}x{height}+{x}+{y}")
+        
+        # Main frame
+        main_frame = tk.Frame(dialog)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Amount entry
+        tk.Label(main_frame, text="Amount($):").grid(row=0, column=0, sticky='w', pady=(0, 10))
+        amount_var = tk.StringVar()
+        amount_entry = tk.Entry(main_frame, textvariable=amount_var, width=20)
+        amount_entry.grid(row=0, column=1, sticky='w', pady=(0, 10))
+        
+        # Validation and submission function
+        def validate_and_submit():
+            try:
+                amount = float(amount_var.get())
+                if amount < 0:
+                    raise ValueError("Amount must be non-negative")
+            except ValueError:
+                tk.messagebox.showerror("Validation Error", "Please enter a valid amount (number >= 0).")
+                return
+            
+            try:
+                # Update the transaction with payment
+                db.update_transaction_payment(self.selected_transaction_id)
+                tk.messagebox.showinfo("Success", "Payment added successfully!")
+                dialog.destroy()
+                # Refresh the transactions view
+                self.view_transactions_equipment()
+            except Exception as e:
+                tk.messagebox.showerror("Database Error", f"Failed to add payment: {str(e)}")
+        
+        # Buttons frame
+        button_frame = tk.Frame(main_frame)
+        button_frame.grid(row=1, column=0, columnspan=2, pady=(20, 0))
+        
+        # Confirm button
+        confirm_button = tk.Button(button_frame, text="Confirm", command=validate_and_submit, width=10)
+        confirm_button.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Cancel button
+        cancel_button = tk.Button(button_frame, text="Cancel", command=dialog.destroy, width=10)
+        cancel_button.pack(side=tk.LEFT)
+    def add_item_dialog(self):
+        if not hasattr(self, 'selected_transaction_id') or not self.selected_transaction_id:
+            tk.messagebox.showerror("Error", "No transaction selected.")
+            return
+        
+        # Create dialog window
+        dialog = tk.Toplevel(self)
+        dialog.title("Add Item")
+        dialog.geometry("400x200")
+        dialog.resizable(False, False)
+        
+        # Center the dialog on screen
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        # Calculate center position
+        dialog.update_idletasks()
+        width = dialog.winfo_width()
+        height = dialog.winfo_height()
+        x = (dialog.winfo_screenwidth() // 2) - (width // 2)
+        y = (dialog.winfo_screenheight() // 2) - (height // 2)
+        dialog.geometry(f"{width}x{height}+{x}+{y}")
+        
+        # Main frame
+        main_frame = tk.Frame(dialog)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Equipment dropdown
+        tk.Label(main_frame, text="Equipment:").grid(row=0, column=0, sticky='w', pady=(0, 10))
+        equipment_var = tk.StringVar()
+        equipment_dropdown = ttk.Combobox(main_frame, textvariable=equipment_var, state="readonly", width=30)
+        equipment_dropdown.grid(row=0, column=1, sticky='w', pady=(0, 10))
+        
+        # Store equipment data for ID lookup
+        self.equipment_data = []
+        
+        # Load equipment data
+        try:
+            equipment_df = db.get_all_equipment_for_dropdown()
+            # Store equipment data with ID for backend use
+            self.equipment_data = [{'id': row['id'], 'description': row['item_description']} for _, row in equipment_df.iterrows()]
+            # Set initial values (just descriptions for display)
+            equipment_descriptions = [equipment['description'] for equipment in self.equipment_data]
+            equipment_dropdown['values'] = equipment_descriptions
+        except Exception as e:
+            tk.messagebox.showerror("Error", f"Failed to load equipment data: {str(e)}")
+            dialog.destroy()
+            return
+        
+        # Validation and submission function
+        def validate_and_submit():
+            if not equipment_var.get():
+                tk.messagebox.showerror("Validation Error", "Please select equipment.")
+                return
+            
+            # Find equipment ID by matching the selected description
+            selected_equipment_description = equipment_var.get()
+            equipment_id = None
+            for equipment in self.equipment_data:
+                if equipment['description'] == selected_equipment_description:
+                    equipment_id = equipment['id']
+                    break
+            
+            if equipment_id is None:
+                tk.messagebox.showerror("Validation Error", "Selected equipment not found.")
+                return
+            
+            try:
+                # Update the transaction with item
+                db.update_transaction_item(self.selected_transaction_id, equipment_id)
+                tk.messagebox.showinfo("Success", "Item added successfully!")
+                dialog.destroy()
+                # Refresh the transactions view
+                self.view_transactions_equipment()
+            except Exception as e:
+                tk.messagebox.showerror("Database Error", f"Failed to add item: {str(e)}")
+        
+        # Buttons frame
+        button_frame = tk.Frame(main_frame)
+        button_frame.grid(row=1, column=0, columnspan=2, pady=(20, 0))
+        
+        # Confirm button
+        confirm_button = tk.Button(button_frame, text="Confirm", command=validate_and_submit, width=10)
+        confirm_button.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Cancel button
+        cancel_button = tk.Button(button_frame, text="Cancel", command=dialog.destroy, width=10)
+        cancel_button.pack(side=tk.LEFT)
+    def view_instructors_equipment(self):
+        df = db.sp_view_instructors()
+        print(df)
+        self.refresh_datagrid(self.my_tree_equipment, df, self.right_frame_tab5)
+    def view_all_inc_equipment(self):
+        df = db.sp_all_income()
+        print(df)
+        self.refresh_datagrid(self.my_tree_equipment, df, self.right_frame_tab5)
+    def view_all_exp_equipment(self):
+        df = db.sp_all_expenses()
+        print(df)
+        self.refresh_datagrid(self.my_tree_equipment, df, self.right_frame_tab5)
+    def view_all_teaching_hours_equipment(self):
+        df = db.sp_all_teaching_hours()
+        print(df)
+        self.refresh_datagrid(self.my_tree_equipment, df, self.right_frame_tab5)
+    def view_all_rental_hours_equipment(self):
+        df = db.sp_all_rental_hours()
+        print(df)
+        self.refresh_datagrid(self.my_tree_equipment, df, self.right_frame_tab5)
+    def view_projections_equipment(self):
+        df = db.sp_projections()
+        print(df)
+        self.refresh_datagrid(self.my_tree_equipment, df, self.right_frame_tab5)
+    def view_summary_equipment(self):
+        df = db.sp_club_equipment_data_v2()
+        print(df)
+        self.refresh_datagrid(self.my_tree_equipment, df, self.right_frame_tab5)
 
 
     ## tkinter app stuff ##
@@ -576,6 +1835,14 @@ class MyApp(tk.Tk):
         tab4.grid_rowconfigure(0, weight=1)
         tab4.grid_columnconfigure(0, weight=1)
         tab4.grid_columnconfigure(1, weight=15)
+
+        tab5 = ttk.Frame(self.nb)
+        self.nb.add(tab5, text='PMA Equipment')
+        self.tab_frames.append(tab5)
+
+        tab5.grid_rowconfigure(0, weight=1)
+        tab5.grid_columnconfigure(0, weight=1)
+        tab5.grid_columnconfigure(1, weight=5)
     def create_frames(self):
         ## tab1 ##
         self.left_frame_tab1 = tk.Frame(self.tab_frames[0])
@@ -630,6 +1897,17 @@ class MyApp(tk.Tk):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=10)
+
+        ## tab5 ##
+        self.left_frame_tab5 = tk.Frame(self.tab_frames[4])
+        self.left_frame_tab5.grid(row=0, column=0, sticky="nsew")
+
+        self.right_frame_tab5 = tk.Frame(self.tab_frames[4])
+        self.right_frame_tab5.grid(row=0, column=1, sticky="nsew")
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=10)
     def refresh_datagrid(self, treeview:ttk.Treeview, df:pd.DataFrame, tab:tk.Frame):
         treeview.delete(*treeview.get_children())
         treeview['show'] = 'headings'
@@ -658,8 +1936,8 @@ class MyApp(tk.Tk):
             treeview.heading(column, text=column, anchor='w', command=lambda c=column: sort_treeview(c))
             treeview.column(column, stretch=False, minwidth=25, width=100)
 
-        for row in df_rows:
-            treeview.insert("", "end", values=row)
+        # Use populate_treeview for initial population to ensure auto-resize
+        self.populate_treeview(treeview, df)
 
         treeview.place(x=1, y=30, width=880, height=650)
         x_scrollbar.place(x=0, y=675, width=880, height=20, anchor='nw')
@@ -667,6 +1945,216 @@ class MyApp(tk.Tk):
 
         if tab == self.right_frame_tab1:
             treeview.bind("<Button-3>", self.show_right_click_menu)
+    def refresh_datagrid_with_coloring(self, treeview:ttk.Treeview, df:pd.DataFrame, tab:tk.Frame, original_df:pd.DataFrame = None):
+        treeview.delete(*treeview.get_children())
+        treeview['show'] = 'headings'
+
+        x_scrollbar = ttk.Scrollbar(tab, orient="horizontal")
+        y_scrollbar = ttk.Scrollbar(tab, orient="vertical")
+        x_scrollbar.configure(command=treeview.xview)
+        y_scrollbar.configure(command=treeview.yview)
+
+        treeview.configure(xscrollcommand=x_scrollbar.set, yscrollcommand=y_scrollbar.set)
+
+        columns = tuple(df.columns.tolist())
+        df_rows = df.to_numpy().tolist()
+        treeview['columns'] = columns
+
+        column_sort_order = {column: False for column in columns}
+
+        def sort_treeview(column):
+            nonlocal column_sort_order
+            column_sort_order[column] = not column_sort_order[column]
+            df.sort_values(by=column, ascending=column_sort_order[column], inplace=True)
+            # Also sort the original dataframe to maintain alignment
+            if original_df is not None:
+                original_df.sort_values(by=column, ascending=column_sort_order[column], inplace=True)
+            self.populate_treeview_with_coloring(treeview, df, original_df)
+
+        for column in columns:
+            treeview.heading(column, text=column, anchor='w', command=lambda c=column: sort_treeview(c))
+            treeview.column(column, stretch=False, minwidth=25, width=100)
+
+        # Populate with coloring
+        self.populate_treeview_with_coloring(treeview, df, original_df)
+
+        treeview.place(x=1, y=30, width=880, height=650)
+        x_scrollbar.place(x=0, y=675, width=880, height=20, anchor='nw')
+        y_scrollbar.place(x=880, y=30, width=20, height=650, anchor='nw')
+
+        if tab == self.right_frame_tab1:
+            treeview.bind("<Button-3>", self.show_right_click_menu)
+    def populate_treeview_with_coloring(self, treeview:ttk.Treeview, df:pd.DataFrame, original_df:pd.DataFrame = None):
+        # Clear existing items
+        treeview.delete(*treeview.get_children())
+        
+        # Get column names
+        columns = df.columns.tolist()
+        
+        # Check if item_id and pay_date columns exist
+        item_id_col = None
+        pay_date_col = None
+        
+        for i, col in enumerate(columns):
+            if 'item_id' in col.lower():
+                item_id_col = i
+            if 'pay_date' in col.lower():
+                pay_date_col = i
+        
+        # Insert rows with coloring
+        for index, row in df.iterrows():
+            values = row.tolist()
+            
+            # Check if row should be colored yellow
+            should_color_yellow = False
+            
+            # Use original dataframe for null detection if available
+            if original_df is not None and index < len(original_df):
+                original_row = original_df.iloc[index]
+                
+                if item_id_col is not None:
+                    item_id_value = original_row.iloc[item_id_col]
+                    if pd.isna(item_id_value) or item_id_value is None or item_id_value == '':
+                        should_color_yellow = True
+                
+                if pay_date_col is not None:
+                    pay_date_value = original_row.iloc[pay_date_col]
+                    if pd.isna(pay_date_value) or pay_date_value is None or pay_date_value == '':
+                        should_color_yellow = True
+            else:
+                # Fallback to using the converted dataframe
+                if item_id_col is not None:
+                    item_id_value = values[item_id_col]
+                    if pd.isna(item_id_value) or item_id_value is None or item_id_value == '' or item_id_value == 0:
+                        should_color_yellow = True
+                
+                if pay_date_col is not None:
+                    pay_date_value = values[pay_date_col]
+                    if pd.isna(pay_date_value) or pay_date_value is None or pay_date_value == '':
+                        should_color_yellow = True
+            
+            # Insert the row
+            item = treeview.insert("", "end", values=values)
+            
+            # Apply yellow background if needed
+            if should_color_yellow:
+                treeview.set(item, columns[0], values[0])  # This ensures the item is properly set
+                # Apply yellow background to the entire row
+                for col in columns:
+                    treeview.set(item, col, values[columns.index(col)])
+                # Use tag to apply background color
+                treeview.item(item, tags=('yellow_row',))
+        
+        # Configure the tag for yellow background
+        treeview.tag_configure('yellow_row', background='yellow')
+        
+        # Auto-resize columns after populating
+        self.auto_resize_columns(treeview)
+    def auto_resize_columns(self, treeview:ttk.Treeview):
+        """Auto-resize columns to fit content width"""
+        for column in treeview['columns']:
+            # Get the maximum width needed for this column
+            max_width = 0
+            
+            # Determine if this is an ID, name, or other specific column for more compact sizing
+            column_lower = str(column).lower()
+            is_id_column = 'id' in column_lower and column_lower != 'item_id'
+            is_name_column = 'name' in column_lower
+            is_pay_rate_column = 'pay_rate' in column_lower
+            is_payment_good_till_column = 'payment_good_till' in column_lower
+            is_profile_comment_column = 'profile_comment' in column_lower
+            
+            # Use different character width and padding for different column types
+            if is_id_column:
+                char_width = 6  # More compact for ID columns
+                padding = 10    # Less padding for ID columns
+                min_width = 40  # Smaller minimum for ID columns
+            elif is_name_column:
+                char_width = 6  # More compact for name columns
+                padding = 12    # Less padding for name columns
+                min_width = 50  # Smaller minimum for name columns
+            elif is_pay_rate_column:
+                char_width = 6  # More compact for pay_rate columns
+                padding = 10    # Less padding for pay_rate columns
+                min_width = 45  # Smaller minimum for pay_rate columns
+            elif is_payment_good_till_column:
+                char_width = 6  # More compact for payment_good_till columns
+                padding = 10    # Less padding for payment_good_till columns
+                min_width = 45  # Smaller minimum for payment_good_till columns
+            elif is_profile_comment_column:
+                char_width = 6  # More compact for profile_comment columns
+                padding = 10    # Less padding for profile_comment columns
+                min_width = 45  # Smaller minimum for profile_comment columns
+            else:
+                char_width = 8  # Standard character width
+                padding = 20    # Standard padding
+                min_width = 50  # Standard minimum width
+            
+            # Check header width
+            header_width = len(str(column)) * char_width
+            max_width = max(max_width, header_width)
+            
+            # Check content width for each row
+            for item in treeview.get_children():
+                value = treeview.set(item, column)
+                if value:
+                    content_width = len(str(value)) * char_width
+                    max_width = max(max_width, content_width)
+            
+            # Set final width with appropriate padding
+            final_width = max(min_width, max_width + padding)
+            
+            # Configure the column width
+            treeview.column(column, width=final_width)
+    def refresh_datagrid_equipment(self, treeview:ttk.Treeview, df:pd.DataFrame, tab:tk.Frame):
+        """Refresh datagrid with auto-resize for PMA Equipment tab"""
+        treeview.delete(*treeview.get_children())
+        treeview['show'] = 'headings'
+
+        x_scrollbar = ttk.Scrollbar(tab, orient="horizontal")
+        y_scrollbar = ttk.Scrollbar(tab, orient="vertical")
+        x_scrollbar.configure(command=treeview.xview)
+        y_scrollbar.configure(command=treeview.yview)
+
+        treeview.configure(xscrollcommand=x_scrollbar.set, yscrollcommand=y_scrollbar.set)
+
+        columns = tuple(df.columns.tolist())
+        df_rows = df.to_numpy().tolist()
+        treeview['columns'] = columns
+
+        column_sort_order = {column: False for column in columns}
+
+        def sort_treeview(column):
+            nonlocal column_sort_order
+            column_sort_order[column] = not column_sort_order[column]
+            df.sort_values(by=column, ascending=column_sort_order[column], inplace=True)
+            self.populate_treeview_equipment(treeview, df)
+
+        for column in columns:
+            treeview.heading(column, text=column, anchor='w', command=lambda c=column: sort_treeview(c))
+            treeview.column(column, stretch=False, minwidth=25, width=100)
+
+        # Populate the treeview
+        self.populate_treeview_equipment(treeview, df)
+
+        treeview.place(x=1, y=30, width=880, height=650)
+        x_scrollbar.place(x=0, y=675, width=880, height=20, anchor='nw')
+        y_scrollbar.place(x=880, y=30, width=20, height=650, anchor='nw')
+
+        if tab == self.right_frame_tab1:
+            treeview.bind("<Button-3>", self.show_right_click_menu)
+    def populate_treeview_equipment(self, treeview:ttk.Treeview, df:pd.DataFrame):
+        """Populate treeview for PMA Equipment tab"""
+        # Clear existing items
+        treeview.delete(*treeview.get_children())
+        
+        # Insert rows
+        for index, row in df.iterrows():
+            values = row.tolist()
+            treeview.insert("", "end", values=values)
+        
+        # Auto-resize columns after populating
+        self.auto_resize_columns(treeview)
     def show_right_click_menu(self, event:tk.Event):
         # Set my_tree based on the event widget
         self.my_tree = event.widget
@@ -774,6 +2262,9 @@ class MyApp(tk.Tk):
 
         for row in dataframe.itertuples(index=False, name=None):
             treeview.insert("", "end", values=row)
+        
+        # Auto-resize columns after populating
+        self.auto_resize_columns(treeview)
     def create_labels_buttons_entries(self):
         def tab1(self):
             datagrid_label = tk.Label(self.right_frame_tab1, text="Result Datagrid", font="verdana 15 bold")
@@ -813,13 +2304,14 @@ class MyApp(tk.Tk):
                 ("Student ID:", None, "ID1", 14, None, (0, 0)),
                 ("ID:", None, "ID2", 15, None, (0, 0)),
                 ("ID:", None, "ID3", 16, None, (0, 0)),
-                ("Good 'Til (y-m-d):", None, "date_till", 17, None, (0, 0)),
-                ("Pay Rate:", None, "pay_rate", 18, None, (0, 0)),
-                ("Total:", None, "total", 19, None, (0, 0)),
-                ("Calc. Tax:", None, "calc_tax", 20, None, (0, 0)),
-                ("PKRT:", None, "club", 21, None, (0, 0)),
-                ("E-transfer:", None, "etransfer", 22, None, (0, 0)),
-                ("Txn Note:", None, "txn_note", 23, None, (0, 0)),
+                ("ID:", None, "ID4", 17, None, (0, 0)),
+                ("Good 'Til (y-m-d):", None, "date_till", 18, None, (0, 0)),
+                ("Pay Rate:", None, "pay_rate", 19, None, (0, 0)),
+                ("Total:", None, "total", 20, None, (0, 0)),
+                ("Calc. Tax:", None, "calc_tax", 21, None, (0, 0)),
+                ("PKRT:", None, "club", 22, None, (0, 0)),
+                ("E-transfer:", None, "etransfer", 23, None, (0, 0)),
+                ("Txn Note:", None, "txn_note", 24, None, (0, 0)),
             ]
             for label_text, button_text, entry_text, row, command, pady in section_two:
                 if label_text:
@@ -1124,12 +2616,82 @@ class MyApp(tk.Tk):
                 else:
                     button = tk.Button(self.left_frame_tab4, text=text, width=14, command=command)
                     button.grid(row=row, column=col, sticky=sticky, pady=pady)
+        def tab5(self):
+            datagrid_label = tk.Label(self.right_frame_tab5, text="Result Datagrid", font="verdana 15 bold")
+            datagrid_label.pack()
 
+            definition_label = tk.Label(self.left_frame_tab5, text="Control Panel", font='verdana 15 bold')
+            definition_label.grid(row=1, column=1, columnspan=2, pady=(0,15))
+
+            # View Students at the top
+            view_students_label = tk.Label(self.left_frame_tab5, text="View Students:")
+            view_students_label.grid(row=2, column=1, sticky='ne', pady=(0,3))
+
+            view_students_button = tk.Button(self.left_frame_tab5, text="Students", height=1, command=self.view_students_equipment)
+            view_students_button.grid(row=2, column=2, sticky='nw', pady=(0,3))
+
+            # Search functionality
+            search_section = [
+                ("Database Search:", "Search", 3, self.search_grid_equipment_command, (0, 10)),
+                ("First Name:", None, 4, None, None),
+                ("Last Name:", None, 5, None, None),
+                ("Email:", None, 6, None, (0,25))
+            ]
+            for label_text, button_text, row, command, pady in search_section:
+                label = tk.Label(self.left_frame_tab5, text=label_text)
+                label.grid(row=row, column=1, sticky='ne', pady=pady)
+
+                if button_text:
+                    button = tk.Button(self.left_frame_tab5, text=button_text, command=command)
+                    button.grid(row=row, column=2, sticky='nw', pady=pady)
+                else:
+                    entry = tk.Entry(self.left_frame_tab5, width=10)
+                    entry.grid(row=row, column=2, sticky='nw', pady=pady)
+
+                    self.entry_widgets_search_equipment[label_text] = entry
+
+            # Equipment functionality with more spacing
+            equipment_section = [
+                ("Equipment List:", "Equipment", self.view_equipment_list_equipment, 9, 'ne', (0,3)),
+                ("Stock Quantities:", "Stock", self.view_stock_quantities_equipment, 10, 'ne', (0,3)),
+                ("Transactions:", "Transactions", self.view_transactions_equipment, 11, 'ne', (0,3))
+            ]
+            for label_text, button_text, command, row, sticky, pady in equipment_section:
+                label = tk.Label(self.left_frame_tab5, text=label_text)
+                label.grid(row=row, column=1, sticky=sticky, pady=pady)
+
+                button = tk.Button(self.left_frame_tab5, text=button_text, height=1, command=command)
+                button.grid(row=row, column=2, sticky='nw', pady=pady)
+
+            # Add visual spacer between sections
+            spacer_label = tk.Label(self.left_frame_tab5, text="", height=2)
+            spacer_label.grid(row=13, column=1, columnspan=2, pady=(10, 10))
+
+            # Payment status section with more spacing
+            payment_section = [
+                ("Received & Paid:", "Received & Paid", self.received_and_paid_dialog, 15, 'ne', (0,3)),
+                ("Received, Not Paid:", "Received, Not Paid", self.received_not_paid_dialog, 16, 'ne', (0,3)),
+                ("Paid, Not Received:", "Paid, Not Received", self.paid_not_received_dialog, 17, 'ne', (0,3)),
+                ("Belt, Testing:", "Belt, Testing", self.belt_testing_dialog, 18, 'ne', (0,3)),
+                ("", "", None, 19, 'ne', (10,0)),  # Spacer
+                ("Summary:", "Summary", self.view_summary_equipment, 20, 'ne', (0,3))
+            ]
+            for label_text, button_text, command, row, sticky, pady in payment_section:
+                if command is not None:  # Only create label and button if command exists
+                    label = tk.Label(self.left_frame_tab5, text=label_text)
+                    label.grid(row=row, column=1, sticky=sticky, pady=pady)
+
+                    button = tk.Button(self.left_frame_tab5, text=button_text, height=1, command=command)
+                    button.grid(row=row, column=2, sticky='nw', pady=pady)
+                else:  # Create spacer
+                    spacer_label = tk.Label(self.left_frame_tab5, text="", height=1)
+                    spacer_label.grid(row=row, column=1, columnspan=2, pady=pady)
 
         tab1(self)
         tab2(self)
         tab3(self)
         tab4(self)
+        tab5(self)
 
         
 if __name__ == "__main__":

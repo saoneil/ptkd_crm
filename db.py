@@ -48,26 +48,26 @@ def sp_outstanding_payments():
     df = get_dataframe(connection=cn, sql=query)
 
     return df
-def search_grid_tab1(first_name, last_name, email):
-    print(first_name)
-    print(last_name)
-    print(email)
-    if not(first_name == None or first_name == ""):
-        query = f"select * from students where active = 1 and first_name like '%{first_name}%';"
-        print(query)
-    elif not(last_name == None or last_name == ""):
-        query = f"select * from students where active = 1 and last_name like '%{last_name}%';"
-        print(query)
-    elif not(email == None or email == ""):
-        query = f"select * from students where active = 1 and email1 like '%{email}%';"
-        print(query)
-    else:
-        query = f"select * from students where active = 1;"
-        print(query)
+def sp_pma_general_search(first_name, last_name, email):
+    """Search for students using first name, last name, or email with flexible matching"""
+    # Handle None values and empty strings
+    first_name = first_name if first_name and first_name.strip() else None
+    last_name = last_name if last_name and last_name.strip() else None
+    email = email if email and email.strip() else None
+    
+    # Format parameters for the stored procedure call
+    first_name_param = f"'{first_name}'" if first_name else "NULL"
+    last_name_param = f"'{last_name}'" if last_name else "NULL"
+    email_param = f"'{email}'" if email else "NULL"
+    
+    query = f"call sp_pma_general_search({first_name_param}, {last_name_param}, {email_param});"
     cn = get_connection(sql_db = schema)
     df = get_dataframe(connection=cn, sql=query)
-
     return df
+
+def search_grid_tab1(first_name, last_name, email):
+    """Legacy function - now uses the new stored procedure"""
+    return sp_pma_general_search(first_name, last_name, email)
 def sp_commit_payment_to_db(IN_ID, IN_GOOD_TILL, IN_PAY_RATE, IN_TOTAL, IN_TAX, IN_KRT, IN_TXN_NOTE):
     query = f'call sp_commit_payment_to_db({IN_ID}, "{IN_GOOD_TILL}", {IN_PAY_RATE}, {IN_TOTAL}, {IN_TAX}, {IN_KRT}, "{IN_TXN_NOTE}");'
     cn = get_connection(sql_db = schema)
@@ -245,4 +245,101 @@ def sp_birthdays():
     cn = get_connection(sql_db = schema)
     df = get_dataframe(connection=cn, sql=query)
 
+    return df
+
+## tab 5 - PMA Equipment methods ##
+def sp_view_active_students():
+    query = """
+    select
+    id,
+    concat(first_name, " ", last_name) as `name`
+    from students where active = 1;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+
+    return df
+
+def sp_view_club_equipment():
+    query = "select * from club_equipment;"
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+
+    return df
+
+def sp_club_equipment_remaining_stock():
+    query = "call sp_club_equipment_remaining_stock_v2;"
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+
+    return df
+
+def sp_view_club_equipment_transactions():
+    query = """
+    select 
+    t.id,
+    concat(first_name, " ", last_name) as `name`,
+    t.item_id,
+    t.qty,
+    t.amount_paid,
+    pay_date
+    from club_equipment_transactions t
+    left join students s on s.id = t.student_id
+    order by t.id desc
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+
+    return df
+
+def sp_insert_club_equipment_payment(student_id, item_id, quantity, amount, paid_bool, paydate):
+    # Handle null item_id
+    if item_id is None:
+        item_id_str = "null"
+    else:
+        item_id_str = str(item_id)
+    
+    # Handle null paydate
+    if paydate is None:
+        query = f"call sp_insert_club_equipment_payment({student_id}, {item_id_str}, {quantity}, {amount}, {paid_bool}, null);"
+    else:
+        query = f"call sp_insert_club_equipment_payment({student_id}, {item_id_str}, {quantity}, {amount}, {paid_bool}, '{paydate}');"
+    cn = get_connection(sql_db = schema)
+    execute_sql(connection=cn, sql=query)
+    cn.close()
+
+def get_all_students_for_dropdown():
+    query = "select id, concat(first_name, ' ', last_name) as name from students where active = 1 order by first_name, last_name;"
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+
+def get_all_equipment_for_dropdown():
+    query = "select id, item_description from club_equipment order by id asc;"
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+
+def get_belt_equipment_for_dropdown():
+    query = "select id, item_description from club_equipment where item_description like '%belt%' order by id asc;"
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+
+def update_transaction_payment(transaction_id):
+    query = f"update club_equipment_transactions set paid_bool = 1, pay_date = now() where id = {transaction_id};"
+    cn = get_connection(sql_db = schema)
+    execute_sql(connection=cn, sql=query)
+    cn.close()
+
+def update_transaction_item(transaction_id, item_id):
+    query = f"update club_equipment_transactions set item_id = {item_id} where id = {transaction_id};"
+    cn = get_connection(sql_db = schema)
+    execute_sql(connection=cn, sql=query)
+    cn.close()
+
+def sp_club_equipment_data_v2():
+    query = "call sp_club_equipment_data_v2;"
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
     return df

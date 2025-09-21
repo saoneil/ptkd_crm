@@ -55,6 +55,30 @@ def create_email(subject: str, email_from: str, emails_to: list, emails_cc: list
         print("Failed to create draft email.")
         print(e)
 
+def create_html_email(subject: str, email_from: str, emails_to: list, emails_cc: list, emails_bcc: list, body: str):
+    """Create HTML email for draft messages (Draft to All, Draft to Karate, Draft to Wait-list)"""
+    message = MIMEText(body, 'html')
+    # Filter out None values and empty lists
+    emails_to = [email for email in emails_to if email] if emails_to else []
+    emails_cc = [email for email in emails_cc if email] if emails_cc else []
+    emails_bcc = [email for email in emails_bcc if email] if emails_bcc else []
+    
+    message['to'] = ', '.join(emails_to) if emails_to else ''
+    message['cc'] = ', '.join(emails_cc) if emails_cc else ''
+    message['bcc'] = ', '.join(emails_bcc) if emails_bcc else ''
+    message['from'] = email_from
+    message['subject'] = subject
+
+    encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+    draft_body = {'message': {'raw': encoded_message}}
+
+    try:
+        service.users().drafts().create(userId='me', body=draft_body).execute()
+        print("HTML draft email created successfully.")
+    except Exception as e:
+        print("Failed to create HTML draft email.")
+        print(e)
+
 def create_ptkd_receipt_email(subject: str, email_from: str, emails_to: list, emails_cc: list, emails_bcc: list, file_template: str, receipt_data: list):
     body = ''
     with open(file_template, 'r') as f:
