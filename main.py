@@ -1665,7 +1665,7 @@ class MyApp(tk.Tk):
             
             try:
                 # Update the transaction with payment
-                db.update_transaction_payment(self.selected_transaction_id)
+                db.update_transaction_payment(self.selected_transaction_id, amount)
                 tk.messagebox.showinfo("Success", "Payment added successfully!")
                 dialog.destroy()
                 # Refresh the transactions view

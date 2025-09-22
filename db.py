@@ -326,8 +326,8 @@ def get_belt_equipment_for_dropdown():
     df = get_dataframe(connection=cn, sql=query)
     return df
 
-def update_transaction_payment(transaction_id):
-    query = f"update club_equipment_transactions set paid_bool = 1, pay_date = now() where id = {transaction_id};"
+def update_transaction_payment(transaction_id, amount):
+    query = f"update club_equipment_transactions set paid_bool = 1, pay_date = now(), amount_paid = {amount} where id = {transaction_id};"
     cn = get_connection(sql_db = schema)
     execute_sql(connection=cn, sql=query)
     cn.close()
