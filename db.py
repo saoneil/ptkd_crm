@@ -136,6 +136,54 @@ def sp_display_testing_grid():
 
     return df
 
+def get_students_testing_preview(ids):
+    """Return detailed testing fields for selected students.
+
+    ids can be a list of integers or a comma-separated string of ids.
+    """
+    if ids is None:
+        return pd.DataFrame()
+    if isinstance(ids, list):
+        ids = [str(i) for i in ids if str(i).strip()]
+        if len(ids) == 0:
+            return pd.DataFrame()
+        ids_csv = ",".join(ids)
+    else:
+        ids_csv = str(ids)
+        if ids_csv.strip() == "":
+            return pd.DataFrame()
+
+    query = f"""
+    select
+        concat(first_name, ' ', last_name) as name,
+        current_rank,
+        yellow_stripe_testdate as `YS`,
+        yellow_belt_testdate as `YB`,
+        green_stripe_testdate as `GS`,
+        green_belt_testdate as `GB`,
+        blue_stripe_testdate as `BS`,
+        blue_belt_testdate as `BB`,
+        red_stripe_testdate as `RS`,
+        red_belt_testdate as `RB`,
+        black_stripe_testdate as `BKS`,
+        `1st_dan_testdate` as `1D`,
+        `2nd_dan_testdate` as `2D`,
+        `3rd_dan_testdate` as `3D`,
+        `4th_dan_testdate` as `4D`,
+        `5th_dan_testdate` as `5D`,
+        `6th_dan_testdate` as `6D`,
+        `7th_dan_testdate` as `7D`,
+        `8th_dan_testdate` as `8D`,
+        `9th_dan_testdate` as `9D`
+    from students
+    where id in({ids_csv})
+    order by name
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+
 ## tab 4 ##
 def sp_view_eom_transfer():
     query = "call sp_view_eom_transfer;"

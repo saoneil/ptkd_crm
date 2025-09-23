@@ -62,6 +62,9 @@ class MyApp(tk.Tk):
         self.existing_student_dropdown_value = tk.StringVar()
         self.import_rental_hours_value = tk.StringVar()
         self.student_id = ""
+        # PMA Testing tab state
+        self.testing_selected_student_ids = []
+        self.testing_selected_count_label = None
 
         self.create_tabs()
         self.create_frames()
@@ -1440,20 +1443,177 @@ class MyApp(tk.Tk):
     
     ## tab 3 ##
     def commit_testing_command(self):
-        id_list = []
-        for field, entry_widget in self.entry_widgets_testing_results.items():
-            data = entry_widget.get()
-            if field == "Date of Testing:":
-                testing_date = data
-            else:
-                id_list.append(data)
-        id_list_filtered = [item for item in id_list if item != ""]
+        # Get testing date
+        testing_date = self.entry_widgets_testing_results.get("Date of Testing:").get()
+        # Use selected IDs from selector
+        id_list_filtered = [str(x) for x in self.testing_selected_student_ids if x is not None and str(x).strip() != ""]
+        if not id_list_filtered:
+            messagebox.showwarning("No Students", "Please select at least one student.")
+            return
         for id in id_list_filtered:
             db.sp_commit_testing_results(id, testing_date)
+        messagebox.showinfo("Testing Committed", f"Committed testing for {len(id_list_filtered)} students on {testing_date}.")
     def display_testing_grid(self):
         df3 = db.sp_display_testing_grid()
         print(df3)
         self.refresh_datagrid(self.my_tree_testing, df3, self.top_right_frame_tab3)
+    def open_testing_student_selector(self):
+        # Build modal dialog for selecting active students
+        selector = tk.Toplevel(self)
+        selector.title("Select Students for Testing")
+        selector.geometry("500x500")
+        selector.transient(self)
+        selector.grab_set()
+
+        # Center the dialog on screen
+        try:
+            selector.update_idletasks()
+            width, height = 500, 500
+            screen_w = selector.winfo_screenwidth()
+            screen_h = selector.winfo_screenheight()
+            x = (screen_w // 2) - (width // 2)
+            y = (screen_h // 2) - (height // 2)
+            selector.geometry(f"{width}x{height}+{x}+{y}")
+        except Exception:
+            pass
+
+        # Search bar
+        search_var = tk.StringVar()
+        search_entry = tk.Entry(selector, textvariable=search_var)
+        search_entry.pack(fill=tk.X, padx=10, pady=(10,5))
+
+        # Listbox with multiselect
+        listbox = tk.Listbox(selector, selectmode=tk.MULTIPLE)
+        listbox.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        # Load active students
+        try:
+            df = db.sp_view_active_students()
+            students = [(int(row['id']), str(row['name'])) for _, row in df.iterrows()]
+        except Exception:
+            students = []
+
+        # Maintain persistent selection across searches
+        selected_ids = set(self.testing_selected_student_ids or [])
+
+        # Keep a filtered view
+        def refresh_list():
+            typed = search_var.get().lower().strip()
+            listbox.delete(0, tk.END)
+            for sid, name in students:
+                if typed in name.lower():
+                    listbox.insert(tk.END, f"{sid} - {name}")
+            # Reselect already chosen ids when filtering changes
+            current_ids = set(selected_ids)
+            for idx in range(listbox.size()):
+                try:
+                    sid = int(listbox.get(idx).split(' - ')[0])
+                    if sid in current_ids:
+                        listbox.selection_set(idx)
+                except Exception:
+                    pass
+
+        refresh_list()
+
+        def on_search_change(*args):
+            refresh_list()
+        search_var.trace_add('write', lambda *args: on_search_change())
+
+        # Footer with actions
+        footer = tk.Frame(selector)
+        footer.pack(fill=tk.X, padx=10, pady=(5,10))
+
+        def on_select_all():
+            # Add all currently visible ids to persistent selection
+            visible_ids = []
+            for idx in range(listbox.size()):
+                try:
+                    sid = int(listbox.get(idx).split(' - ')[0])
+                    visible_ids.append(sid)
+                except Exception:
+                    pass
+            for sid in visible_ids:
+                selected_ids.add(sid)
+            refresh_list()
+            update_preview()
+        def on_clear_all():
+            # Remove all currently visible ids from persistent selection
+            visible_ids = []
+            for idx in range(listbox.size()):
+                try:
+                    sid = int(listbox.get(idx).split(' - ')[0])
+                    visible_ids.append(sid)
+                except Exception:
+                    pass
+            for sid in visible_ids:
+                if sid in selected_ids:
+                    selected_ids.remove(sid)
+            refresh_list()
+            update_preview()
+        def on_done():
+            ids = sorted(list(selected_ids))
+            self.testing_selected_student_ids = ids
+            if self.testing_selected_count_label is not None:
+                self.testing_selected_count_label.config(text=f"Selected: {len(ids)}")
+            selector.destroy()
+
+        def update_preview(event=None):
+            # Use persistent selection and fetch detailed preview from DB
+            ids = sorted(list(selected_ids))
+            self.testing_selected_student_ids = ids
+            if self.testing_selected_count_label is not None:
+                self.testing_selected_count_label.config(text=f"Selected: {len(ids)}")
+            if len(ids) == 0:
+                # Clear grid
+                self.refresh_datagrid(self.my_tree_testing, pd.DataFrame(), self.top_right_frame_tab3)
+            else:
+                df_preview = db.get_students_testing_preview(ids)
+                self.refresh_datagrid(self.my_tree_testing, df_preview, self.top_right_frame_tab3)
+
+        # Clicking toggles selection without losing prior selections
+        def on_click_toggle(event):
+            try:
+                idx = listbox.nearest(event.y)
+                if idx >= 0:
+                    # Toggle membership in persistent selection
+                    text = listbox.get(idx)
+                    sid = int(text.split(' - ')[0])
+                    if sid in selected_ids:
+                        selected_ids.remove(sid)
+                    else:
+                        selected_ids.add(sid)
+                    # Refresh UI selection to reflect persistent set
+                    refresh_list()
+                    update_preview()
+                return "break"  # prevent default behavior
+            except Exception:
+                return
+
+        # Bind live update on selection changes and keyboard actions
+        listbox.bind('<Button-1>', on_click_toggle)
+        # For keyboard support, Space toggles selection at active index
+        def on_space_toggle(event):
+            try:
+                idx = listbox.index(tk.ACTIVE)
+                text = listbox.get(idx)
+                sid = int(text.split(' - ')[0])
+                if sid in selected_ids:
+                    selected_ids.remove(sid)
+                else:
+                    selected_ids.add(sid)
+                refresh_list()
+                update_preview()
+                return "break"
+            except Exception:
+                return
+        listbox.bind('<space>', on_space_toggle)
+
+        select_all_btn = tk.Button(footer, text="Select All", command=on_select_all)
+        clear_all_btn = tk.Button(footer, text="Clear", command=on_clear_all)
+        done_btn = tk.Button(footer, text="Done", command=on_done)
+        select_all_btn.pack(side=tk.LEFT)
+        clear_all_btn.pack(side=tk.LEFT, padx=(10,0))
+        done_btn.pack(side=tk.RIGHT)
     ## tab 4 ##
     def view_eom_transfer(self):
         df = db.sp_view_eom_transfer()
@@ -3684,51 +3844,34 @@ class MyApp(tk.Tk):
             self.save_button.grid(row=25, column=1, columnspan=6, sticky='n', pady=(40, 0))
         def tab3(self):
             testing_update_label = tk.Label(self.top_left_frame_tab3, text="Log Testing Results", font="verdana 15 bold")
-            testing_update_label.grid(row=1, column=1, columnspan=2, sticky='w', pady=(15,15), padx=(10,10))
+            testing_update_label.grid(row=1, column=1, columnspan=3, sticky='w', pady=(15,15), padx=(10,10))
 
             datagrid_label = tk.Label(self.top_right_frame_tab3, text="Result Datagrid", font="verdana 15 bold")
             datagrid_label.pack()
 
-            testing_fields = [
-            ("Date of Testing:", 3, 1, (0,5), 'e'),
-            ("ID 1:", 4, 1, (0,5), 'e'),
-            ("ID 2:", 5, 1, (0,5), 'e'),
-            ("ID 3:", 6, 1, (0,5), 'e'),
-            ("ID 4:", 7, 1, (0,5), 'e'),
-            ("ID 5:", 8, 1, (0,5), 'e'),
-            ("ID 6:", 9, 1, (0,5), 'e'),
-            ("ID 7:", 10, 1, (0,5), 'e'),
-            ("ID 8:", 11, 1, (0,5), 'e'),
-            ("ID 9:", 12, 1, (0,5), 'e'),
-            ("ID 10:", 13, 1, (0,5), 'e'),
-            ("ID 11:", 14, 1, (0,5), 'e'),
-            ("ID 12:", 15, 1, (0,5), 'e'),
-            ("ID 13:", 16, 1, (0,5), 'e'),
-            ("ID 14:", 17, 1, (0,5), 'e'),
-            ("ID 15:", 18, 1, (0,5), 'e'),
-            ("ID 16:", 19, 1, (0,5), 'e'),
-            ("ID 17:", 20, 1, (0,5), 'e'),
-            ("ID 18:", 21, 1, (0,5), 'e'),
-            ("ID 19:", 22, 1, (0,5), 'e'),
-            ("ID 20:", 23, 1, (0,5), 'e'),
-            ]
-            for (field, row, col, pady, sticky) in testing_fields:
-                label = tk.Label(self.top_left_frame_tab3, text=field)
-                label.grid(row=row+1, column=col, sticky=sticky, pady=pady)
+            # Date of testing with calendar button
+            date_label = tk.Label(self.top_left_frame_tab3, text="Date of Testing:")
+            date_label.grid(row=4, column=1, sticky='e', pady=(0,5))
+            date_frame = tk.Frame(self.top_left_frame_tab3)
+            date_frame.grid(row=4, column=2, sticky='w')
+            date_entry = tk.Entry(date_frame, width=15, justify='left')
+            date_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+            calendar_button = tk.Button(date_frame, text="📅", width=3, command=lambda e=date_entry: self.show_calendar_dialog(e))
+            calendar_button.pack(side=tk.RIGHT, padx=(5, 0))
+            date_entry.insert(0, datetime.today().strftime("%Y-%m-%d"))
+            self.entry_widgets_testing_results["Date of Testing:"] = date_entry
 
-                entry = tk.Entry(self.top_left_frame_tab3)
-                entry.grid(row=row+1, column=col+1, sticky='w')
+            # Student selection controls
+            select_label = tk.Label(self.top_left_frame_tab3, text="Select Students:")
+            select_label.grid(row=5, column=1, sticky='e', pady=(10,5))
+            select_btn = tk.Button(self.top_left_frame_tab3, text="Select Students", command=self.open_testing_student_selector)
+            select_btn.grid(row=5, column=2, sticky='w', pady=(10,5))
+            self.testing_selected_count_label = tk.Label(self.top_left_frame_tab3, text="Selected: 0")
+            self.testing_selected_count_label.grid(row=5, column=3, sticky='w', padx=(10,0))
 
-                # Store the entry widget in the dictionary with the field as the key
-                self.entry_widgets_testing_results[field] = entry
-
-            self.entry_widgets_testing_results["Date of Testing:"].insert(0, datetime.today().strftime("%Y-%m-%d"))
-
+            # Action buttons
             testing_update_button = tk.Button(self.top_left_frame_tab3, text="Commit Testing to DB", command=self.commit_testing_command)
-            testing_update_button.grid(row=25, column=1, columnspan=2, pady=(15,15))
-
-            testing_data_button = tk.Button(self.top_left_frame_tab3, text="Display Testing Data", command=self.display_testing_grid)
-            testing_data_button.grid(row=26, column=1, columnspan=2, pady=(0,15))
+            testing_update_button.grid(row=7, column=1, columnspan=2, pady=(15,15), sticky='w')
         def tab4(self):
             datagrid_label = tk.Label(self.right_frame_tab4, text="Result Datagrid", font="verdana 15 bold")
             datagrid_label.pack()
