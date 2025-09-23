@@ -185,28 +185,16 @@ def get_students_testing_preview(ids):
     return df
 
 ## tab 4 ##
-def sp_view_eom_transfer():
-    query = "call sp_view_eom_transfer;"
-    cn = get_connection(sql_db = schema)
-    df = get_dataframe(connection=cn, sql=query)
-
-    return df
-def sp_view_current_rental_hours():
-    query = "call sp_view_current_rental_hours;"
-    cn = get_connection(sql_db = schema)
-    df = get_dataframe(connection=cn, sql=query)
-
-    return df
-def sp_view_current_teaching_hours():
-    query = "call sp_view_current_teaching_hours;"
-    cn = get_connection(sql_db = schema)
-    df = get_dataframe(connection=cn, sql=query)
-
-    return df
+## removed legacy quick views: sp_view_eom_transfer, sp_view_current_rental_hours, sp_view_current_teaching_hours
 def sp_import_rental_month(month_name):
     month_dict = {month: index for index, month in enumerate(calendar.month_abbr) if month}
     month_num = month_dict[month_name]
     query = f"call sp_import_rental_month({month_num});"
+    cn = get_connection(sql_db = schema)
+    execute_sql(connection=cn, sql=query)
+
+def sp_import_rental_month_v2(year_value, month_num):
+    query = f"call sp_import_rental_month_v2({int(year_value)}, {int(month_num)});"
     cn = get_connection(sql_db = schema)
     execute_sql(connection=cn, sql=query)
 def sp_cancel_rental_date(cancel_date, cancel_reason):
@@ -233,8 +221,14 @@ def sp_paid_instructors_email():
     df = get_dataframe(connection=cn, sql=query)
 
     return df
-def sp_import_expense(expense_date, expense_desc, expense_amount, expense_tax, expense_method, expense_club):
-    query = f"call sp_import_expense('{expense_date}', '{expense_desc}', {expense_amount}, {expense_tax}, '{expense_method}', '{expense_club}')"
+def sp_import_expense(expense_date, expense_desc, expense_amount, expense_tax, expense_method, expense_club, tax_category=None, folder_path=None):
+    tax_category_sql = str(int(tax_category)) if tax_category is not None else "NULL"
+    folder_path_sql = f"'{folder_path}'" if folder_path is not None else "NULL"
+    query = (
+        "call sp_import_expense("
+        f"'{expense_date}', '{expense_desc}', {expense_amount}, {expense_tax}, "
+        f"'{expense_method}', '{expense_club}', {tax_category_sql}, {folder_path_sql})"
+    )
     cn = get_connection(sql_db = schema)
     execute_sql(connection=cn, sql=query)
 def sp_all_income():
@@ -266,6 +260,200 @@ def sp_projections():
     cn = get_connection(sql_db = schema)
     df = get_dataframe(connection=cn, sql=query)
 
+    return df
+
+# Financials by year
+def sp_income_by_month_v2(year):
+    query = f"call sp_income_by_month_v2({int(year)});"
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+
+def get_rental_hours_by_year_month(year, month):
+    query = f"""
+    select
+        id,
+        training_date,
+        hours_trained,
+        pay_rate,
+        gross_total,
+        payment_date,
+        cancelled,
+        cancellation_reason
+    from rental_hours rh
+    where month(training_date) = {int(month)}
+      and year(training_date) = {int(year)}
+    order by training_date asc
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+
+def get_teaching_hours_by_year_month(year, month):
+    query = f"""
+    select 
+        th.id,
+        concat(first_name, " ", last_name) as name,
+        i.payment_email_address,
+        th.record_date,
+        i.pay_rate,
+        th.hours_worked,
+        th.gross_total,
+        th.payment_date
+    from teaching_hours th
+    left join students s on s.id = th.student_id
+    left join instructors i on i.id = th.instructor_id
+    where month(record_date) = {int(month)}
+      and year(record_date) = {int(year)}
+    order by i.id
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+
+def get_rental_year_summary(year):
+    query = f"""
+    select
+        year(training_date) as year,
+        month(training_date) as month,
+        sum(gross_total) as gross_db,
+        rh.payment_sent,
+        rh.payment_date
+    from rental_hours rh
+    where cancelled = 0
+      and year(training_date) = {int(year)}
+    group by month(training_date), year(training_date)
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+
+def update_rental_hours_record(
+    record_id: int,
+    training_date: str,
+    hours_trained: str,
+    pay_rate: str,
+    payment_sent: str,
+    payment_date: str | None,
+    training_hours: str | None,
+    cancelled: int,
+    cancellation_reason: str | None,
+):
+    payment_date_sql = f"'{payment_date}'" if payment_date and str(payment_date).strip() != "" else "NULL"
+    training_hours_sql = f"'{training_hours}'" if training_hours is not None else "NULL"
+    cancellation_reason_sql = f"'{cancellation_reason}'" if cancellation_reason is not None else "NULL"
+
+    query = (
+        "update rental_hours set "
+        f"training_date = '{training_date}', "
+        f"hours_trained = '{hours_trained}', "
+        f"pay_rate = '{pay_rate}', "
+        f"payment_sent = '{payment_sent}', "
+        f"payment_date = {payment_date_sql}, "
+        f"training_hours = {training_hours_sql}, "
+        f"cancelled = {int(cancelled)}, "
+        f"cancellation_reason = {cancellation_reason_sql}, "
+        "record_update_timestamp = now() "
+        f"where id = {int(record_id)};"
+    )
+    cn = get_connection(sql_db = schema)
+    execute_sql(connection=cn, sql=query)
+
+## removed unused: find_rental_id()
+
+def update_rental_cancellation(record_id: int, cancelled: int, cancellation_reason: str | None):
+    cancellation_reason_sql = f"'{cancellation_reason}'" if cancellation_reason is not None else "NULL"
+    query = (
+        "update rental_hours set "
+        f"cancelled = {int(cancelled)}, "
+        f"cancellation_reason = {cancellation_reason_sql}, "
+        "record_update_timestamp = now() "
+        f"where id = {int(record_id)};"
+    )
+    cn = get_connection(sql_db = schema)
+    execute_sql(connection=cn, sql=query)
+def get_rental_record_by_id(record_id: int):
+    query = f"""
+    select
+        id,
+        training_date,
+        hours_trained,
+        pay_rate,
+        payment_sent,
+        payment_date,
+        training_hours,
+        cancelled,
+        cancellation_reason
+    from rental_hours
+    where id = {int(record_id)}
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+def delete_rental_hours_record(record_id: int):
+    query = f"delete from rental_hours where id = {int(record_id)};"
+    cn = get_connection(sql_db = schema)
+    execute_sql(connection=cn, sql=query)
+
+def log_rental_payment(record_id: int):
+    query = (
+        f"update rental_hours set payment_sent = 1, payment_date = now(), record_update_timestamp = now() where id = {int(record_id)};"
+    )
+    cn = get_connection(sql_db = schema)
+    execute_sql(connection=cn, sql=query)
+
+def update_teaching_hours_record(
+    record_id: int,
+    record_date: str,
+    hours_worked: str,
+    pay_rate: str,
+    payment_date: str | None,
+):
+    payment_date_sql = f"'{payment_date}'" if payment_date and str(payment_date).strip() != "" else "NULL"
+    query = (
+        "update teaching_hours set "
+        f"record_date = '{record_date}', "
+        f"hours_worked = '{hours_worked}', "
+        f"pay_rate = '{pay_rate}', "
+        f"payment_date = {payment_date_sql} "
+        f"where id = {int(record_id)};"
+    )
+    cn = get_connection(sql_db = schema)
+    execute_sql(connection=cn, sql=query)
+
+def delete_teaching_hours_record(record_id: int):
+    query = f"delete from teaching_hours where id = {int(record_id)};"
+    cn = get_connection(sql_db = schema)
+    execute_sql(connection=cn, sql=query)
+
+def get_teaching_payroll_summary(year: int, month: int):
+    query = f"""
+    select 
+        concat(first_name, " ", last_name) as name,
+        i.payment_email_address as email,
+        sum(th.hours_worked) as hours,
+        sum(th.gross_total) as amount
+    from teaching_hours th
+    left join students s on s.id = th.student_id
+    left join instructors i on i.id = th.instructor_id
+    where month(record_date) = {int(month)}
+      and year(record_date) = {int(year)}
+    group by i.id
+    order by i.id
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+
+def get_tax_expense_categories():
+    query = "select id, category_name from tax_expense_category order by category_name;"
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
     return df
 
 ## context menu actions, all tabs ##

@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 import pandas as pd
 from tkinter import simpledialog
 import numpy as np
@@ -71,7 +71,7 @@ class MyApp(tk.Tk):
         self.create_labels_buttons_entries()
 
         self.my_tree = ttk.Treeview(self.right_frame_tab1)
-        self.my_tree_admin = ttk.Treeview(self.right_frame_tab4)
+        self.my_tree_admin = ttk.Treeview(self.right_frame_tab4, selectmode='extended')
         self.my_tree_equipment = ttk.Treeview(self.right_frame_tab5)
         self.my_tree_testing = ttk.Treeview(self.top_right_frame_tab3)
 
@@ -1108,9 +1108,8 @@ class MyApp(tk.Tk):
             messagebox.showinfo("Success", "Changes saved successfully.")
         except Exception as e:
             messagebox.showerror("Save failed", str(e))
-    
-    def show_calendar_dialog(self, entry_widget):
-        """Show a simple calendar dialog for date selection"""
+        def show_calendar_dialog(self, entry_widget):
+            """Show a simple calendar dialog for date selection"""
         if self.calendar_dialog:
             self.calendar_dialog.destroy()
         
@@ -1196,7 +1195,7 @@ class MyApp(tk.Tk):
         
         # Create calendar
         self.create_calendar()
-    
+
     def create_calendar(self):
         """Create the calendar grid"""
         # Clear existing widgets
@@ -1282,7 +1281,6 @@ class MyApp(tk.Tk):
             self.calendar_month = 12
             self.calendar_year -= 1
         self.create_calendar()
-    
     def next_month(self):
         """Go to next month"""
         self.calendar_month += 1
@@ -1290,17 +1288,14 @@ class MyApp(tk.Tk):
             self.calendar_month = 1
             self.calendar_year += 1
         self.create_calendar()
-
     def prev_year(self):
         """Go to previous year"""
         self.calendar_year -= 1
         self.create_calendar()
-
     def next_year(self):
         """Go to next year"""
         self.calendar_year += 1
         self.create_calendar()
-
     def on_calendar_month_change(self, event=None):
         """Handle month dropdown changes"""
         names = ["January", "February", "March", "April", "May", "June",
@@ -1311,7 +1306,6 @@ class MyApp(tk.Tk):
         except Exception:
             pass
         self.create_calendar()
-
     def on_calendar_year_change(self):
         """Handle year spinbox changes"""
         try:
@@ -1320,7 +1314,72 @@ class MyApp(tk.Tk):
         except Exception:
             pass
         self.create_calendar()
-    
+
+    def show_calendar_dialog(self, entry_widget):
+        """Show a simple calendar dialog for date selection"""
+        # Close any existing dialog
+        try:
+            if getattr(self, 'calendar_dialog', None):
+                self.calendar_dialog.destroy()
+        except Exception:
+            pass
+        # Create dialog
+        self.calendar_dialog = tk.Toplevel(self)
+        self.calendar_dialog.title("Select Date")
+        self.calendar_dialog.geometry("300x300")
+        self.calendar_dialog.resizable(False, False)
+        self.calendar_dialog.transient(self)
+        self.calendar_dialog.grab_set()
+
+        # Center
+        self.calendar_dialog.update_idletasks()
+        x = (self.calendar_dialog.winfo_screenwidth() // 2) - (300 // 2)
+        y = (self.calendar_dialog.winfo_screenheight() // 2) - (300 // 2)
+        self.calendar_dialog.geometry(f"300x300+{x}+{y}")
+
+        calendar_frame = tk.Frame(self.calendar_dialog)
+        calendar_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        now = datetime.now()
+        self.calendar_year = now.year
+        self.calendar_month = now.month
+        self.calendar_day = now.day
+
+        nav_frame = tk.Frame(calendar_frame)
+        nav_frame.pack(fill=tk.X, pady=(0, 10))
+
+        tk.Button(nav_frame, text="«", width=2, command=self.prev_year).pack(side=tk.LEFT)
+        tk.Button(nav_frame, text="<", width=2, command=self.prev_month).pack(side=tk.LEFT, padx=(5, 0))
+
+        month_names = ["January", "February", "March", "April", "May", "June",
+                       "July", "August", "September", "October", "November", "December"]
+        self.month_var = tk.StringVar(value=month_names[self.calendar_month-1])
+        month_combo = ttk.Combobox(nav_frame, state="readonly", width=12, textvariable=self.month_var, values=month_names)
+        month_combo.pack(side=tk.LEFT, padx=(10, 10))
+        month_combo.bind('<<ComboboxSelected>>', self.on_calendar_month_change)
+
+        current_year = self.calendar_year
+        self.year_var = tk.IntVar(value=current_year)
+        year_spin = tk.Spinbox(nav_frame, from_=current_year-100, to=current_year+100, width=6, textvariable=self.year_var, command=self.on_calendar_year_change)
+        year_spin.pack(side=tk.LEFT)
+        year_spin.bind('<Return>', lambda e: self.on_calendar_year_change())
+        year_spin.bind('<FocusOut>', lambda e: self.on_calendar_year_change())
+
+        tk.Button(nav_frame, text=">", width=2, command=self.next_month).pack(side=tk.LEFT, padx=(10, 5))
+        tk.Button(nav_frame, text="»", width=2, command=self.next_year).pack(side=tk.LEFT)
+
+        self.calendar_frame = tk.Frame(calendar_frame)
+        self.calendar_frame.pack(fill=tk.BOTH, expand=True)
+
+        button_frame = tk.Frame(calendar_frame)
+        button_frame.pack(fill=tk.X, pady=(10, 0))
+        tk.Button(button_frame, text="Today", command=lambda: self.select_date(now.strftime("%Y-%m-%d"))).pack(side=tk.LEFT)
+        tk.Button(button_frame, text="Clear", command=lambda: self.select_date("")).pack(side=tk.LEFT, padx=(10, 0))
+        tk.Button(button_frame, text="Cancel", command=self.calendar_dialog.destroy).pack(side=tk.RIGHT)
+
+        # Remember target entry
+        self.calendar_entry_widget = entry_widget
+        self.create_calendar()
     def select_date(self, date_str):
         """Select a date and update the entry widget"""
         if self.calendar_entry_widget:
@@ -1330,7 +1389,7 @@ class MyApp(tk.Tk):
         if self.calendar_dialog:
             self.calendar_dialog.destroy()
         self.calendar_dialog = None
-    
+
     def configure_dropdown_listbox(self, dropdown):
         """Configure the dropdown listbox to be wider for better readability"""
         try:
@@ -1342,7 +1401,7 @@ class MyApp(tk.Tk):
         except:
             # If configuration fails, just continue
             pass
-    
+
     def show_competition_picker(self, entry_widget):
         """Show a popover listbox to choose competition interest (stores id, shows text)."""
         # Build toplevel near the entry
@@ -1394,7 +1453,7 @@ class MyApp(tk.Tk):
 
         # Close on outside click
         self.bind('<Button-1>', on_click_out, add='+')
-    
+
     def on_field_change(self, event=None):
         """Handle field changes - turn save button yellow only if values have actually changed"""
         if self.save_button and hasattr(self, 'original_student_values') and self.original_student_values:
@@ -1615,22 +1674,25 @@ class MyApp(tk.Tk):
         clear_all_btn.pack(side=tk.LEFT, padx=(10,0))
         done_btn.pack(side=tk.RIGHT)
     ## tab 4 ##
-    def view_eom_transfer(self):
-        df = db.sp_view_eom_transfer()
-        print(df)
-        self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
-    def view_current_rental_hours(self):
-        df = db.sp_view_current_rental_hours()
-        print(df)
-        self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
-    def view_current_teaching_hours(self):
-        df = db.sp_view_current_teaching_hours()
-        print(df)
-        self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+    # Removed legacy quick views in favor of filtered buttons
     def import_rental_month(self):
-        data = self.import_rental_hours_value.get()
-        print(data)
-        db.sp_import_rental_month(data)
+        # Read numeric year and month (YYYY, 1-12)
+        year_text = self.import_rental_year_entry.get().strip()
+        month_text = self.import_rental_month_entry.get().strip()
+        try:
+            if year_text == "":
+                year_text = datetime.today().strftime("%Y")
+            if month_text == "":
+                month_text = datetime.today().strftime("%m")
+            year_value = int(year_text)
+            month_value = int(month_text)
+            if month_value < 1 or month_value > 12:
+                raise ValueError("month out of range")
+        except Exception:
+            tk.messagebox.showerror("Input Error", "Enter valid Year (YYYY) and Month (1-12) for import.")
+            return
+        print(year_value, month_value)
+        db.sp_import_rental_month_v2(year_value, month_value)
         print("Import Rental Hours Complete")
     def cancel_rental_date(self):
         for field, entry_widget in self.entry_widget_cancel_rental.items():
@@ -1666,23 +1728,64 @@ class MyApp(tk.Tk):
         print(df)
         self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
     def pay_instructors(self):
-        df = db.sp_paid_instructors_email()
-        db.sp_pay_instructors()
-        print("Payments Updated in DB")
-        df = df.dropna()
-        print(df)
-
-        df_string = df.to_string(index=False)
-        
-        email_handler_google.create_email(
-            subject="PMA Payroll",
+        try:
+            year_value = int(self.teaching_year_entry.get().strip() or datetime.today().strftime("%Y"))
+            month_value = int(self.teaching_month_entry.get().strip() or datetime.today().strftime("%m"))
+        except Exception:
+            tk.messagebox.showerror("Input Error", "Enter valid Year (YYYY) and Month (1-12) before generating payroll email.")
+            return
+        df = db.get_teaching_payroll_summary(year_value, month_value).dropna()
+        # Build HTML body with month/year mention and a simple styled table
+        try:
+            month_name = datetime(year_value, month_value, 1).strftime('%B')
+        except Exception:
+            month_name = f"{month_value:02d}"
+        intro_html = f"<p>Teaching payroll summary for <strong>{month_name} {year_value}</strong>.</p>"
+        # Construct HTML table
+        table_header = (
+            "<table style=\"border-collapse:collapse; font-family:Verdana,Arial,sans-serif; font-size:12px;\">"
+            "<thead><tr>"
+            "<th style=\"border:1px solid #ddd; padding:6px 8px; text-align:left;\">Name</th>"
+            "<th style=\"border:1px solid #ddd; padding:6px 8px; text-align:left;\">Email</th>"
+            "<th style=\"border:1px solid #ddd; padding:6px 8px; text-align:right;\">Hours</th>"
+            "<th style=\"border:1px solid #ddd; padding:6px 8px; text-align:right;\">Amount</th>"
+            "</tr></thead><tbody>"
+        )
+        rows_html = []
+        for _, r in df.iterrows():
+            name = str(r.get('name', ''))
+            email = str(r.get('email', ''))
+            hours = r.get('hours', '')
+            amount = r.get('amount', '')
+            try:
+                hours = f"{float(hours):.2f}"
+            except Exception:
+                hours = str(hours)
+            try:
+                amount = f"${float(amount):.2f}"
+            except Exception:
+                amount = str(amount)
+            row = (
+                "<tr>"
+                f"<td style=\"border:1px solid #ddd; padding:6px 8px;\">{name}</td>"
+                f"<td style=\"border:1px solid #ddd; padding:6px 8px;\">{email}</td>"
+                f"<td style=\"border:1px solid #ddd; padding:6px 8px; text-align:right;\">{hours}</td>"
+                f"<td style=\"border:1px solid #ddd; padding:6px 8px; text-align:right;\">{amount}</td>"
+                "</tr>"
+            )
+            rows_html.append(row)
+        table_footer = "</tbody></table>"
+        body_html = intro_html + table_header + "".join(rows_html) + table_footer
+        email_handler_google.create_html_email(
+            subject=f"PMA Payroll - {month_name} {year_value}",
             email_from="saoneil@live.com",
             emails_to=[],
             emails_cc=[],
             emails_bcc=[],
-            body = df_string
-            )  
+            body=body_html
+        )
     def add_admin_expense(self):
+        tax_category_id = None
         for field, entry_widget in self.entry_widget_add_expense.items():
             data = entry_widget.get()
             if field == "Date (y-m-d):":
@@ -1697,11 +1800,19 @@ class MyApp(tk.Tk):
                 expense_method = data
             elif field == "Club (PTKD/PKRT):":
                 expense_club = data
+            elif field == "Tax Category:":
+                # Map category name to id (allow NULL if not selected)
+                if hasattr(self, '_tax_category_map') and data in self._tax_category_map:
+                    tax_category_id = self._tax_category_map[data]
+                else:
+                    tax_category_id = None
+            elif field == "Folder Path:":
+                expense_folder_path = data
             try:
                 entry_widget.delete(0, 'end')
             except:
                 pass
-        db.sp_import_expense(expense_date, expense_desc, expense_amount, expense_tax, expense_method, expense_club)
+        db.sp_import_expense(expense_date, expense_desc, expense_amount, expense_tax, expense_method, expense_club, tax_category_id, expense_folder_path)
         print("Expense Imported")
     def view_all_inc(self):
         df = db.sp_all_income()
@@ -1721,6 +1832,351 @@ class MyApp(tk.Tk):
         self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
     def view_projections(self):
         df = db.sp_projections()
+        print(df)
+        self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+    def view_rentals_by_year_month(self):
+        try:
+            year_text = self.rentals_year_entry.get().strip()
+            month_text = self.rentals_month_entry.get().strip()
+            if year_text == "":
+                year_text = datetime.today().strftime("%Y")
+            if month_text == "":
+                month_text = datetime.today().strftime("%m")
+            year_value = int(year_text)
+            month_value = int(month_text)
+            if month_value < 1 or month_value > 12:
+                raise ValueError("month out of range")
+        except Exception:
+            tk.messagebox.showerror("Input Error", "Enter valid Year (YYYY) and Month (1-12).")
+            return
+        df = db.get_rental_hours_by_year_month(year_value, month_value)
+        print(df)
+        self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+        # Mark current admin view and bind right click
+        self.current_admin_view = 'rentals'
+        self.my_tree_admin.bind("<Button-3>", self.on_right_click_admin)
+    def view_rental_year_summary(self):
+        try:
+            # Prefer summary-specific year, fallback to import year, then current year
+            year_text = self.rental_summary_year_entry.get().strip() if hasattr(self, 'rental_summary_year_entry') else ""
+            if year_text == "":
+                year_text = self.import_rental_year_entry.get().strip() if hasattr(self, 'import_rental_year_entry') else ""
+            if year_text == "":
+                year_text = datetime.today().strftime("%Y")
+            year_value = int(year_text)
+        except Exception:
+            tk.messagebox.showerror("Input Error", "Enter a valid Year (YYYY) for summary.")
+            return
+        df = db.get_rental_year_summary(year_value)
+        print(df)
+        self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+    def on_right_click_admin(self, event):
+        if getattr(self, 'current_admin_view', None) not in ('rentals', 'teaching'):
+            return
+        item_id = self.my_tree_admin.identify_row(event.y)
+        selected_items = self.my_tree_admin.selection()
+        # Preserve multi-selection if right-clicking within it; only override selection for single edits
+        if item_id and (len(selected_items) <= 1) and (not selected_items or item_id not in selected_items):
+            self.my_tree_admin.selection_set(item_id)
+            selected_items = (item_id,)
+        menu = tk.Menu(self, tearoff=0)
+        # If we have a single target row (either under cursor or sole selection), enable single-record edit
+        target_item = item_id or (selected_items[0] if len(selected_items) == 1 else None)
+        if target_item:
+            values = self.my_tree_admin.item(target_item, 'values')
+            if self.current_admin_view == 'rentals':
+                try:
+                    # Re-fetch full record by id to ensure correct indices
+                    rec_id = int(values[0])
+                    rec_df = db.get_rental_record_by_id(rec_id)
+                    if not rec_df.empty:
+                        rec = rec_df.iloc[0]
+                        record = {
+                            'id': rec['id'],
+                            'training_date': rec['training_date'],
+                            'hours_trained': rec['hours_trained'],
+                            'pay_rate': rec['pay_rate'],
+                            'payment_sent': rec['payment_sent'],
+                            'payment_date': rec['payment_date'],
+                            'training_hours': rec['training_hours'],
+                            'cancelled': rec['cancelled'],
+                            'cancellation_reason': rec['cancellation_reason'],
+                        }
+                        # Primary edit option
+                        menu.add_command(label="Edit Rental Record", command=lambda r=record: self.open_edit_rental_dialog(r))
+                except Exception:
+                    pass
+                if len(selected_items) > 1:
+                    menu.add_command(label="Bulk Edit Cancellation", command=self.open_bulk_cancel_dialog)
+                    menu.add_command(label="Log Payment", command=self.bulk_log_rental_payment)
+                # Place destructive actions at the bottom
+                if target_item:
+                    menu.add_separator()
+                    menu.add_command(label="Delete Rental Record", command=lambda rid=int(self.my_tree_admin.item(target_item, 'values')[0]): self.confirm_delete_rental_record(rid))
+                if len(selected_items) > 1:
+                    menu.add_command(label="Bulk Delete Rentals", command=self.open_bulk_delete_rentals)
+            elif self.current_admin_view == 'teaching':
+                try:
+                    record = {
+                        'id': values[0],
+                        'record_date': values[3],
+                        'pay_rate': values[4],
+                        'hours_worked': values[5],
+                        'payment_date': values[7],
+                    }
+                    menu.add_command(label="Edit Teaching Record", command=lambda r=record: self.open_edit_teaching_dialog(r))
+                    menu.add_command(label="Delete Teaching Record", command=lambda rid=record['id']: self.confirm_delete_teaching_record(rid))
+                except Exception:
+                    pass
+        menu.tk_popup(event.x_root, event.y_root)
+    def confirm_delete_teaching_record(self, record_id):
+        answer = tk.messagebox.askyesno("Confirm Delete", "Are you sure you want to delete this teaching record?")
+        if not answer:
+            return
+        try:
+            db.delete_teaching_hours_record(int(record_id))
+        except Exception as ex:
+            tk.messagebox.showerror("Delete Error", f"Failed to delete: {ex}")
+            return
+        # Refresh current teaching view
+        try:
+            year_value = int(self.teaching_year_entry.get().strip() or datetime.today().strftime("%Y"))
+            month_value = int(self.teaching_month_entry.get().strip() or datetime.today().strftime("%m"))
+            df = db.get_teaching_hours_by_year_month(year_value, month_value)
+            self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+        except Exception:
+            pass
+    def open_edit_teaching_dialog(self, record):
+        dialog = tk.Toplevel(self)
+        dialog.title("Edit Teaching Record")
+        dialog.transient(self)
+        dialog.grab_set()
+        row = 0
+        fields = [
+            ("Record Date (y-m-d)", 'record_date', 12),
+            ("Hours Worked", 'hours_worked', 6),
+            ("Pay Rate", 'pay_rate', 6),
+            ("Payment Date (y-m-d)", 'payment_date', 12),
+        ]
+        entries = {}
+        for label_text, key, width in fields:
+            tk.Label(dialog, text=label_text).grid(row=row, column=0, sticky='e', padx=(8,4), pady=(4,4))
+            e = tk.Entry(dialog, width=width)
+            e.grid(row=row, column=1, sticky='w', padx=(4,8), pady=(4,4))
+            e.insert(0, '' if record.get(key) is None else str(record.get(key)))
+            entries[key] = e
+            row += 1
+        btn_frame = tk.Frame(dialog)
+        btn_frame.grid(row=row, column=0, columnspan=2, pady=(8,4))
+        def on_save():
+            try:
+                db.update_teaching_hours_record(
+                    record_id=int(record['id']),
+                    record_date=entries['record_date'].get().strip(),
+                    hours_worked=entries['hours_worked'].get().strip(),
+                    pay_rate=entries['pay_rate'].get().strip(),
+                    payment_date=entries['payment_date'].get().strip(),
+                )
+            except Exception as ex:
+                tk.messagebox.showerror("Update Error", f"Failed to update: {ex}")
+                return
+            # Refresh current teaching view
+            try:
+                year_value = int(self.teaching_year_entry.get().strip() or datetime.today().strftime("%Y"))
+                month_value = int(self.teaching_month_entry.get().strip() or datetime.today().strftime("%m"))
+                df = db.get_teaching_hours_by_year_month(year_value, month_value)
+                self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+            except Exception:
+                pass
+            dialog.destroy()
+        tk.Button(btn_frame, text="Save", command=on_save, width=10).pack(side=tk.LEFT, padx=(0,8))
+        tk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=10).pack(side=tk.LEFT)
+        self.center_window(dialog)
+    def bulk_log_rental_payment(self):
+        selected_items = self.my_tree_admin.selection()
+        if not selected_items:
+            return
+        try:
+            for item in selected_items:
+                rec_id = int(self.my_tree_admin.item(item, 'values')[0])
+                db.log_rental_payment(rec_id)
+            # Refresh current rentals view
+            year_value = int(self.rentals_year_entry.get().strip() or datetime.today().strftime("%Y"))
+            month_value = int(self.rentals_month_entry.get().strip() or datetime.today().strftime("%m"))
+            df = db.get_rental_hours_by_year_month(year_value, month_value)
+            self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+        except Exception as ex:
+            tk.messagebox.showerror("Log Payment Error", f"Failed to log payments: {ex}")
+            return
+    def center_window(self, win):
+        win.update_idletasks()
+        w = win.winfo_width()
+        h = win.winfo_height()
+        sw = win.winfo_screenwidth()
+        sh = win.winfo_screenheight()
+        x = (sw // 2) - (w // 2)
+        y = (sh // 2) - (h // 2)
+        win.geometry(f"+{x}+{y}")
+    def open_edit_rental_dialog(self, record):
+        dialog = tk.Toplevel(self)
+        dialog.title("Edit Rental Record")
+        dialog.transient(self)
+        dialog.grab_set()
+        # Labels and entries
+        row = 0
+        fields = [
+            ("Training Date (y-m-d)", 'training_date', 12),
+            ("Hours Trained", 'hours_trained', 6),
+            ("Pay Rate", 'pay_rate', 6),
+            ("Payment Sent (0/1)", 'payment_sent', 4),
+            ("Payment Date (y-m-d)", 'payment_date', 12),
+            ("Training Hours", 'training_hours', 16),
+            ("Cancelled (0/1)", 'cancelled', 4),
+            ("Cancellation Reason", 'cancellation_reason', 20),
+        ]
+        entries = {}
+        for label_text, key, width in fields:
+            tk.Label(dialog, text=label_text).grid(row=row, column=0, sticky='e', padx=(8,4), pady=(4,4))
+            e = tk.Entry(dialog, width=width)
+            e.grid(row=row, column=1, sticky='w', padx=(4,8), pady=(4,4))
+            e.insert(0, '' if record.get(key) is None else str(record.get(key)))
+            entries[key] = e
+            row += 1
+        btn_frame = tk.Frame(dialog)
+        btn_frame.grid(row=row, column=0, columnspan=2, pady=(8,4))
+        def on_save():
+            try:
+                db.update_rental_hours_record(
+                    record_id=int(record['id']),
+                    training_date=entries['training_date'].get().strip(),
+                    hours_trained=entries['hours_trained'].get().strip(),
+                    pay_rate=entries['pay_rate'].get().strip(),
+                    payment_sent=entries['payment_sent'].get().strip(),
+                    payment_date=entries['payment_date'].get().strip(),
+                    training_hours=entries['training_hours'].get().strip(),
+                    cancelled=int(entries['cancelled'].get().strip() or 0),
+                    cancellation_reason=entries['cancellation_reason'].get().strip(),
+                )
+            except Exception as ex:
+                tk.messagebox.showerror("Update Error", f"Failed to update: {ex}")
+                return
+            # Refresh current view
+            try:
+                year_value = int(self.rentals_year_entry.get().strip() or datetime.today().strftime("%Y"))
+                month_value = int(self.rentals_month_entry.get().strip() or datetime.today().strftime("%m"))
+                df = db.get_rental_hours_by_year_month(year_value, month_value)
+                self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+            except Exception:
+                pass
+            dialog.destroy()
+        tk.Button(btn_frame, text="Save", command=on_save, width=10).pack(side=tk.LEFT, padx=(0,8))
+        tk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=10).pack(side=tk.LEFT)
+        self.center_window(dialog)
+    def open_bulk_cancel_dialog(self):
+        selected_items = self.my_tree_admin.selection()
+        if not selected_items:
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("Bulk Edit Cancellation")
+        dialog.transient(self)
+        dialog.grab_set()
+        tk.Label(dialog, text="Cancelled (0/1)").grid(row=0, column=0, sticky='e', padx=(8,4), pady=(4,4))
+        cancelled_entry = tk.Entry(dialog, width=4)
+        cancelled_entry.grid(row=0, column=1, sticky='w', padx=(4,8), pady=(4,4))
+        cancelled_entry.insert(0, "0")
+        tk.Label(dialog, text="Cancellation Reason").grid(row=1, column=0, sticky='e', padx=(8,4), pady=(4,4))
+        reason_entry = tk.Entry(dialog, width=24)
+        reason_entry.grid(row=1, column=1, sticky='w', padx=(4,8), pady=(4,4))
+        btn_frame = tk.Frame(dialog)
+        btn_frame.grid(row=2, column=0, columnspan=2, pady=(8,4))
+        def on_apply():
+            try:
+                cancelled_val = int(cancelled_entry.get().strip() or 0)
+                reason_val = reason_entry.get().strip()
+                for item in selected_items:
+                    values = self.my_tree_admin.item(item, 'values')
+                    rec_id = int(values[0])
+                    db.update_rental_cancellation(rec_id, cancelled_val, reason_val)
+                # Refresh current view
+                year_value = int(self.rentals_year_entry.get().strip() or datetime.today().strftime("%Y"))
+                month_value = int(self.rentals_month_entry.get().strip() or datetime.today().strftime("%m"))
+                df = db.get_rental_hours_by_year_month(year_value, month_value)
+                self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+            except Exception as ex:
+                tk.messagebox.showerror("Bulk Update Error", f"Failed to update: {ex}")
+                return
+            dialog.destroy()
+        tk.Button(btn_frame, text="Apply", command=on_apply, width=10).pack(side=tk.LEFT, padx=(0,8))
+        tk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=10).pack(side=tk.LEFT)
+        self.center_window(dialog)
+    def open_bulk_delete_rentals(self):
+        selected_items = self.my_tree_admin.selection()
+        if not selected_items:
+            return
+        count = len(selected_items)
+        answer = tk.messagebox.askyesno("Confirm Bulk Delete", f"Delete {count} rental record(s)? This cannot be undone.")
+        if not answer:
+            return
+        try:
+            for item in selected_items:
+                values = self.my_tree_admin.item(item, 'values')
+                rec_id = int(values[0])
+                db.delete_rental_hours_record(rec_id)
+            # Refresh current rentals view
+            year_value = int(self.rentals_year_entry.get().strip() or datetime.today().strftime("%Y"))
+            month_value = int(self.rentals_month_entry.get().strip() or datetime.today().strftime("%m"))
+            df = db.get_rental_hours_by_year_month(year_value, month_value)
+            self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+        except Exception as ex:
+            tk.messagebox.showerror("Bulk Delete Error", f"Failed to delete: {ex}")
+            return
+    def confirm_delete_rental_record(self, record_id):
+        answer = tk.messagebox.askyesno("Confirm Delete", "Are you sure you want to delete this rental record?")
+        if not answer:
+            return
+        try:
+            db.delete_rental_hours_record(int(record_id))
+        except Exception as ex:
+            tk.messagebox.showerror("Delete Error", f"Failed to delete: {ex}")
+            return
+        # Refresh rentals grid using current Year/Month selections
+        try:
+            year_value = int(self.rentals_year_entry.get().strip() or datetime.today().strftime("%Y"))
+            month_value = int(self.rentals_month_entry.get().strip() or datetime.today().strftime("%m"))
+            df = db.get_rental_hours_by_year_month(year_value, month_value)
+            self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+        except Exception:
+            pass
+    def view_teaching_by_year_month(self):
+        try:
+            year_text = self.teaching_year_entry.get().strip()
+            month_text = self.teaching_month_entry.get().strip()
+            if year_text == "":
+                year_text = datetime.today().strftime("%Y")
+            if month_text == "":
+                month_text = datetime.today().strftime("%m")
+            year_value = int(year_text)
+            month_value = int(month_text)
+            if month_value < 1 or month_value > 12:
+                raise ValueError("month out of range")
+        except Exception:
+            tk.messagebox.showerror("Input Error", "Enter valid Year (YYYY) and Month (1-12).")
+            return
+        df = db.get_teaching_hours_by_year_month(year_value, month_value)
+        print(df)
+        self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+        self.current_admin_view = 'teaching'
+        self.my_tree_admin.bind("<Button-3>", self.on_right_click_admin)
+    def view_financials_by_year(self):
+        try:
+            year_text = self.financials_year_entry.get().strip()
+            if year_text == "":
+                year_text = datetime.today().strftime("%Y")
+            year_value = int(year_text)
+        except Exception:
+            tk.messagebox.showerror("Input Error", "Please enter a valid 4-digit year.")
+            return
+        df = db.sp_income_by_month_v2(year_value)
         print(df)
         self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
     ## tab 5 - PMA Equipment methods ##
@@ -3048,9 +3504,13 @@ class MyApp(tk.Tk):
             df.sort_values(by=column, ascending=column_sort_order[column], inplace=True)
             self.populate_treeview(treeview, df)
 
-        for column in columns:
+        for idx, column in enumerate(columns):
             treeview.heading(column, text=column, anchor='w', command=lambda c=column: sort_treeview(c))
-            treeview.column(column, stretch=False, minwidth=25, width=100)
+            # Hide id column if present as first column
+            if idx == 0 and column.lower() == 'id':
+                treeview.column(column, stretch=False, width=0, minwidth=0)
+            else:
+                treeview.column(column, stretch=False, minwidth=10, width=60)
 
         # Use populate_treeview for initial population to ensure auto-resize
         self.populate_treeview(treeview, df)
@@ -3087,9 +3547,12 @@ class MyApp(tk.Tk):
                 original_df.sort_values(by=column, ascending=column_sort_order[column], inplace=True)
             self.populate_treeview_with_coloring(treeview, df, original_df)
 
-        for column in columns:
+        for idx, column in enumerate(columns):
             treeview.heading(column, text=column, anchor='w', command=lambda c=column: sort_treeview(c))
-            treeview.column(column, stretch=False, minwidth=25, width=100)
+            if idx == 0 and column.lower() == 'id':
+                treeview.column(column, stretch=False, width=0, minwidth=0)
+            else:
+                treeview.column(column, stretch=False, minwidth=10, width=60)
 
         # Populate with coloring
         self.populate_treeview_with_coloring(treeview, df, original_df)
@@ -3879,53 +4342,80 @@ class MyApp(tk.Tk):
             definition_label = tk.Label(self.left_frame_tab4, text="Control Panel", font='verdana 15 bold')
             definition_label.grid(row=1, column=1, columnspan=2, pady=(0,15))
 
+            # Allow wide fields to expand across columns
+            try:
+                for c in (2, 3, 4, 5):
+                    self.left_frame_tab4.grid_columnconfigure(c, weight=1)
+            except Exception:
+                pass
 
-            section_one = [
-                ("EOM Transfer:", "Transfer", self.view_eom_transfer, 2, 'ne', (0,3)),
-                ("Monthly Rentals:", "Rental Hours", self.view_current_rental_hours, 3, 'ne', (0,3)),
-                ("Monthly Teaching:", "Teaching Hours", self.view_current_teaching_hours, 4, 'ne', (0,3))
-            ]
-            for label_text, button_text, command, row, sticky, pady in section_one:
-                label = tk.Label(self.left_frame_tab4, text=label_text)
-                label.grid(row=row, column=1, sticky=sticky, pady=pady)
-
-                button = tk.Button(self.left_frame_tab4, text=button_text, height=1, command=command)
-                button.grid(row=row, column=2, sticky='nw', pady=pady)
-
-                if label_text == "Monthly Teaching:":
-                    button = tk.Button(self.left_frame_tab4, text="Pay Instructors", height=1, command=self.pay_instructors)
-                    button.grid(row=row, column=3, sticky='nw', pady=pady)
-
-
-            import_rental_hours_dropdown = ttk.Combobox(self.left_frame_tab4, textvariable=self.import_rental_hours_value, width=15)
-            import_rental_hours_dropdown['values'] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-            import_rental_hours_dropdown.grid(row=5, column=2, sticky='ne', pady=(20,10))
+            # Financials quick access just below the Control Panel label
+            financials_label = tk.Label(self.left_frame_tab4, text="Financials:")
+            financials_label.grid(row=2, column=1, sticky='ne', pady=(2,2))
+            self.financials_year_entry = tk.Entry(self.left_frame_tab4, width=6)
+            self.financials_year_entry.grid(row=2, column=2, sticky='nw', pady=(2,2), padx=(2,0))
+            self.financials_year_entry.insert(0, datetime.today().strftime("%Y"))
+            financials_button = tk.Button(self.left_frame_tab4, text="Financials", command=self.view_financials_by_year)
+            financials_button.grid(row=2, column=4, sticky='nw', pady=(2,2), padx=(2,0))
 
 
-            section_two = [
-                ("Import Rental Hrs:", None, "Load", self.import_rental_month, 5, (15,3)),
-                ("Rental Date:", "Cancel", None, None, 6, (0,3)),
-                ("Cancel Reason:", "Reason", "Cancel Rental", self.cancel_rental_date, 7, (0,3))
-            ]
-            for label_text, entry_text, button_text, command, row, pady in section_two:
-                if label_text:
-                    label = tk.Label(self.left_frame_tab4, text=label_text)
-                    label.grid(row=row, column=1, sticky='ne', pady=pady)
-                if entry_text:
-                    entry = tk.Entry(self.left_frame_tab4, text=entry_text, width=15)
-                    entry.grid(row=row, column=2, sticky='nw', pady=pady)
+            # Rentals filter (Year/Month) with button
+            rentals_label = tk.Label(self.left_frame_tab4, text="Rentals:")
+            rentals_label.grid(row=3, column=1, sticky='ne', pady=(2,2))
+            self.rentals_year_entry = tk.Entry(self.left_frame_tab4, width=6)
+            self.rentals_year_entry.grid(row=3, column=2, sticky='nw', pady=(2,2), padx=(2,0))
+            self.rentals_year_entry.insert(0, datetime.today().strftime("%Y"))
+            self.rentals_month_entry = tk.Entry(self.left_frame_tab4, width=3)
+            self.rentals_month_entry.grid(row=3, column=3, sticky='nw', pady=(2,2), padx=(2,0))
+            self.rentals_month_entry.insert(0, datetime.today().strftime("%m"))
+            rentals_button = tk.Button(self.left_frame_tab4, text="Rentals", height=1, command=self.view_rentals_by_year_month)
+            rentals_button.grid(row=3, column=4, sticky='nw', pady=(2,2), padx=(2,0))
 
-                    self.entry_widget_cancel_rental[entry_text] = entry
-                if button_text:
-                    button = tk.Button(self.left_frame_tab4, text=button_text, command=command)
-                    button.grid(row=row, column=3, sticky='nw', pady=pady)
+            # Teaching filter (Year/Month) with button and Pay Instructors
+            teaching_label = tk.Label(self.left_frame_tab4, text="Teaching:")
+            teaching_label.grid(row=5, column=1, sticky='ne', pady=(2,2))
+            self.teaching_year_entry = tk.Entry(self.left_frame_tab4, width=6)
+            self.teaching_year_entry.grid(row=5, column=2, sticky='nw', pady=(2,2), padx=(2,0))
+            self.teaching_year_entry.insert(0, datetime.today().strftime("%Y"))
+            self.teaching_month_entry = tk.Entry(self.left_frame_tab4, width=3)
+            self.teaching_month_entry.grid(row=5, column=3, sticky='nw', pady=(2,2), padx=(2,0))
+            self.teaching_month_entry.insert(0, datetime.today().strftime("%m"))
+            teaching_button = tk.Button(self.left_frame_tab4, text="Teaching", height=1, command=self.view_teaching_by_year_month)
+            teaching_button.grid(row=5, column=4, sticky='nw', pady=(2,2), padx=(2,0))
+            pay_instructors_button = tk.Button(self.left_frame_tab4, text="Pay Instructors", height=1, command=self.pay_instructors)
+            pay_instructors_button.grid(row=11, column=4, sticky='nw', pady=(2,2), padx=(2,0))
+
+            # Reserve flexible spacer row to push import controls to the bottom
+            try:
+                self.left_frame_tab4.grid_rowconfigure(22, weight=1)
+            except Exception:
+                pass
+            # Import Rentals cluster at the bottom
+            import_rentals_frame = tk.Frame(self.left_frame_tab4)
+            import_rentals_frame.grid(row=23, column=1, columnspan=4, sticky='sew', pady=(6,6))
+            import_label = tk.Label(import_rentals_frame, text="Import Rentals:")
+            import_label.grid(row=0, column=0, sticky='e', padx=(0,6))
+            self.import_rental_year_entry = tk.Entry(import_rentals_frame, width=6)
+            self.import_rental_year_entry.grid(row=0, column=1, sticky='w', padx=(0,6))
+            self.import_rental_year_entry.insert(0, datetime.today().strftime("%Y"))
+            self.import_rental_month_entry = tk.Entry(import_rentals_frame, width=3)
+            self.import_rental_month_entry.grid(row=0, column=2, sticky='w', padx=(0,6))
+            self.import_rental_month_entry.insert(0, datetime.today().strftime("%m"))
+            import_button = tk.Button(import_rentals_frame, text="Load", command=self.import_rental_month)
+            import_button.grid(row=0, column=3, sticky='w')
+            # Year parameter for Rental Summary
+            self.rental_summary_year_entry = tk.Entry(self.left_frame_tab4, width=6)
+            self.rental_summary_year_entry.grid(row=4, column=2, sticky='nw', pady=(2,4), padx=(2,0))
+            self.rental_summary_year_entry.insert(0, datetime.today().strftime("%Y"))
+            summary_button = tk.Button(self.left_frame_tab4, text="Rental Summary", command=self.view_rental_year_summary)
+            summary_button.grid(row=4, column=4, sticky='nw', pady=(2,4), padx=(2,0))
 
 
             section_three = [
                 ("Add Teaching Hours", 8, 1, 'nw', (20,0)),
-                ("Date (y-m-d):", 9, 2, 'ne', (5,0)),
-                ("Teacher ID:", 10, 2, 'ne', (0,0)),
-                ("Hours:", 11, 2, 'ne', (0,0)),
+                ("Date (y-m-d):", 9, 1, 'ne', (5,0)),
+                ("Teacher ID:", 10, 1, 'ne', (0,0)),
+                ("Hours:", 11, 1, 'ne', (0,0)),
             ]
             for label_text, row, col, sticky, pady in section_three:
                 if label_text == "Add Teaching Hours":
@@ -3933,30 +4423,38 @@ class MyApp(tk.Tk):
                     label.grid(row=row, column=col, sticky=sticky, pady=pady)
 
                     button = tk.Button(self.left_frame_tab4, text="Enter Record", command=self.add_teaching_hours)
-                    button.grid(row=9, column=col, sticky='nw', rowspan=2)
+                    button.grid(row=9, column=4, sticky='nw')
 
                     button = tk.Button(self.left_frame_tab4, text="View Instructors", command=self.view_instructors)
-                    button.grid(row=10, column=col, sticky='nw', rowspan=2)
+                    button.grid(row=10, column=4, sticky='nw')
                 else:
                     label = tk.Label(self.left_frame_tab4, text=label_text)
                     label.grid(row=row, column=col, sticky=sticky, pady=pady)
 
-                    entry = tk.Entry(self.left_frame_tab4, width=15)
-                    entry.grid(row=row, column=3, sticky='nw', pady=pady)
+                    # Smaller, aligned entries (column 2) consistent with year fields above
+                    entry_width = 10 if label_text == "Date (y-m-d):" else 6
+                    entry = tk.Entry(self.left_frame_tab4, width=entry_width)
+                    entry.grid(row=row, column=2, sticky='nw', pady=pady, padx=(2,0))
+                    if label_text == "Date (y-m-d):":
+                        entry.insert(0, datetime.today().strftime("%Y-%m-%d"))
 
                     self.entry_widget_add_teaching_hours[label_text] = entry
 
 
+            # Spacer to push the Add Expense section further down
+            spacer_before_expense = tk.Label(self.left_frame_tab4, text="")
+            spacer_before_expense.grid(row=13, column=1, columnspan=4, pady=(10,0))
+
             section_four = [
-                ("Add Expense", 12, 1, 'nw', (20,0)),
-                ("Date (y-m-d):", 13, 2, 'ne', (0,0)),
-                ("Desc:", 14, 2, 'ne', (0,0)),
-                ("Amount:", 15, 2, 'ne', (0,0)),
-                ("Tax:", 16, 2, 'ne', (0,0)),
-                # ("Total:", 17, 2, 'ne', (0,0)),
-                ("Method:", 18, 2, 'ne', (0,0)),
-                # ("Comment:", 19, 2, 'ne', (0,0)),
-                ("Club (PTKD/PKRT):", 20, 2, 'ne', (0,0))
+                ("Add Expense", 14, 1, 'nw', (30,0)),
+                ("Date (y-m-d):", 15, 1, 'ne', (0,0)),
+                ("Desc:", 16, 1, 'ne', (0,0)),
+                ("Amount:", 17, 1, 'ne', (0,0)),
+                ("Tax:", 18, 1, 'ne', (0,0)),
+                ("Method:", 19, 1, 'ne', (0,0)),
+                ("Club (PTKD/PKRT):", 20, 1, 'ne', (0,0)),
+                ("Tax Category:", 21, 1, 'ne', (0,0)),
+                ("Folder Path:", 22, 1, 'ne', (0,0))
             ]
             for label_text, row, col, sticky, pady in section_four:
                 if label_text == "Add Expense":
@@ -3964,33 +4462,63 @@ class MyApp(tk.Tk):
                     label.grid(row=row, column=col, sticky=sticky, pady=pady)
 
                     button = tk.Button(self.left_frame_tab4, text="Enter Record", command=self.add_admin_expense)
-                    button.grid(row=row+1, column=col, sticky='nw', rowspan=2)
+                    button.grid(row=row, column=2, sticky='nw')
                 else:
                     label = tk.Label(self.left_frame_tab4, text=label_text)
-                    label.grid(row=row, column=col, sticky=sticky, pady=pady)
+                    label.grid(row=row, column=1, sticky=sticky, pady=pady)
 
-                    entry = tk.Entry(self.left_frame_tab4, width=15)
-                    entry.grid(row=row, column=3, sticky='nw', pady=pady)
+                    if label_text == "Tax Category:":
+                        try:
+                            cats_df = db.get_tax_expense_categories()
+                            cats = cats_df['category_name'].tolist()
+                        except Exception:
+                            cats_df = None
+                            cats = []
+                        entry = ttk.Combobox(self.left_frame_tab4, values=cats, width=16, state='readonly')
+                        entry.grid(row=row, column=2, columnspan=4, sticky='ew', pady=pady, padx=(2,0))
+                        # Store a mapping from name -> id for later submission
+                        self._tax_category_map = {row['category_name']: row['id'] for _, row in (cats_df.iterrows() if cats_df is not None else [])}
+                    else:
+                        entry_width = 10 if label_text == "Date (y-m-d):" else 12 if label_text in ("Folder Path:", "Method:", "Amount:", "Tax:", "Club (PTKD/PKRT):") else 6
+                        # Widen specific fields and allow them to span across columns to match button alignment
+                        if label_text == "Desc:":
+                            entry = tk.Entry(self.left_frame_tab4, width=34)
+                            entry.grid(row=row, column=2, columnspan=4, sticky='ew', pady=pady, padx=(2,0))
+                        elif label_text == "Folder Path:":
+                            entry = tk.Entry(self.left_frame_tab4, width=34)
+                            entry.grid(row=row, column=2, columnspan=4, sticky='nw', pady=(0,0), padx=(2,0))
+                            def _choose_file(e=None, ent=entry):
+                                if getattr(ent, '_dialog_in_progress', False):
+                                    return
+                                ent._dialog_in_progress = True
+                                try:
+                                    path = filedialog.askopenfilename()
+                                    if path:
+                                        ent.delete(0, 'end')
+                                        ent.insert(0, path)
+                                finally:
+                                    # Prevent repeated pop-ups by removing FocusIn binding
+                                    try:
+                                        ent.unbind('<FocusIn>')
+                                    except Exception:
+                                        pass
+                                    # Allow future manual re-open via double-click
+                                    try:
+                                        ent.bind('<Double-Button-1>', _choose_file)
+                                    except Exception:
+                                        pass
+                                    ent._dialog_in_progress = False
+                            entry.bind('<FocusIn>', _choose_file)
+                        else:
+                            entry = tk.Entry(self.left_frame_tab4, width=entry_width)
+                            entry.grid(row=row, column=2, sticky='nw', pady=pady, padx=(2,0))
+                        if label_text == "Date (y-m-d):":
+                            entry.insert(0, datetime.today().strftime("%Y-%m-%d"))
 
                     self.entry_widget_add_expense[label_text] = entry
 
 
-            section_five = [
-                ("Financials:", 21, 1, None, 'nw', (50,0)),
-                ("All Income", 21, 2, self.view_all_inc, 'nw', (50,0)),
-                ("All Expenses", 21, 3, self.view_all_exp, 'nw', (50,0)),
-                ("All Teaching Hours", 22, 2, self.view_all_teaching_hours, 'nw', (0,0)),
-                ("All Rental Hours", 22, 3, self.view_all_rental_hours, 'nw', (0,0)),
-                ("Projections:", 23, 1, None, 'nw', (10,0)),
-                ("12 Month", 23, 2, self.view_projections, 'nw', (10,0))
-            ]
-            for text, row, col, command, sticky, pady in section_five:
-                if (text == "Financials:" or text == "Projections:"):
-                    label = tk.Label(self.left_frame_tab4, text = text, font="verdana 8 bold")
-                    label.grid(row=row, column=col, sticky=sticky, pady=pady)
-                else:
-                    button = tk.Button(self.left_frame_tab4, text=text, width=14, command=command)
-                    button.grid(row=row, column=col, sticky=sticky, pady=pady)
+            # Removed legacy financial buttons per request
         def tab5(self):
             datagrid_label = tk.Label(self.right_frame_tab5, text="Result Datagrid", font="verdana 15 bold")
             datagrid_label.pack()
