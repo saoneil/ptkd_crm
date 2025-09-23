@@ -118,11 +118,11 @@ def sp_view_student_by_id(student_id):
     df = get_dataframe(connection=cn, sql=query)
 
     return df
-def sp_commit_changes_existing_student(IN_ID,IN_FIRST_NAME,IN_LAST_NAME,IN_DOB,IN_DOB_APPROX,IN_START_DATE,IN_ACTIVE,IN_TRIAL_STUDENT,IN_WAIT_LIST,IN_CURRENT_RANK,IN_DOES_KARATE,IN_LOCAL_COMP_INT,IN_NAT_COMP_INT,IN_INTL_COMP_INT,IN_KRT_PROV_TEAM,IN_SIGNED_WAIVER,IN_PROFILE_COMMENT,IN_EMAIL1,IN_EMAIL2,IN_EMAIL3,IN_PHONE1,IN_PHONE2,IN_PHONE3,IN_YS_TD,IN_YB_TD,IN_GS_TD,IN_GB_TD,IN_BS_TD,IN_BB_TD,IN_RS_TD,IN_RB_TD,IN_BKS_TD,IN_1ST_TD):
-    query = f'call sp_commit_changes_existing_student({IN_ID},"{IN_FIRST_NAME}","{IN_LAST_NAME}",{IN_DOB},{IN_DOB_APPROX},{IN_START_DATE},{IN_ACTIVE},{IN_TRIAL_STUDENT},{IN_WAIT_LIST},"{IN_CURRENT_RANK}",{IN_DOES_KARATE},{IN_LOCAL_COMP_INT},{IN_NAT_COMP_INT},{IN_INTL_COMP_INT},{IN_KRT_PROV_TEAM},{IN_SIGNED_WAIVER},"{IN_PROFILE_COMMENT}","{IN_EMAIL1}","{IN_EMAIL2}","{IN_EMAIL3}","{IN_PHONE1}","{IN_PHONE2}","{IN_PHONE3}",{IN_YS_TD},{IN_YB_TD},{IN_GS_TD},{IN_GB_TD},{IN_BS_TD},{IN_BB_TD},{IN_RS_TD},{IN_RB_TD},{IN_BKS_TD},{IN_1ST_TD})'
-    print(query)
+def sp_commit_changes_existing_student(IN_ID,IN_FIRST_NAME,IN_LAST_NAME,IN_DOB,IN_DOB_APPROX,IN_START_DATE,IN_ACTIVE,IN_TRIAL_STUDENT,IN_WAIT_LIST,IN_CURRENT_RANK,IN_DOES_KARATE,IN_TKD_COMP_INT,IN_KRT_COMP_INT,IN_SIGNED_WAIVER,IN_AURORA_MEMBER,IN_PROFILE_COMMENT,IN_EMAIL1,IN_EMAIL2,IN_EMAIL3,IN_PHONE1,IN_PHONE2,IN_PHONE3,IN_PAYMENT_GOOD_TILL,IN_PAY_RATE,IN_GENDER,IN_YS_TD,IN_YB_TD,IN_GS_TD,IN_GB_TD,IN_BS_TD,IN_BB_TD,IN_RS_TD,IN_RB_TD,IN_BKS_TD,IN_1ST_TD,IN_2ND_TD,IN_3RD_TD,IN_4TH_TD,IN_5TH_TD,IN_6TH_TD,IN_7TH_TD,IN_8TH_TD,IN_9TH_TD,IN_BLACK_BELT_INTL_ID,IN_BLACK_BELT_NUMBER):
+    query = f'call sp_commit_changes_existing_student({IN_ID},"{IN_FIRST_NAME}","{IN_LAST_NAME}",{IN_DOB},{IN_DOB_APPROX},{IN_START_DATE},{IN_ACTIVE},{IN_TRIAL_STUDENT},{IN_WAIT_LIST},"{IN_CURRENT_RANK}",{IN_DOES_KARATE},{IN_TKD_COMP_INT},{IN_KRT_COMP_INT},{IN_SIGNED_WAIVER},{IN_AURORA_MEMBER},"{IN_PROFILE_COMMENT}","{IN_EMAIL1}","{IN_EMAIL2}","{IN_EMAIL3}","{IN_PHONE1}","{IN_PHONE2}","{IN_PHONE3}",{IN_PAYMENT_GOOD_TILL},{IN_PAY_RATE},"{IN_GENDER}",{IN_YS_TD},{IN_YB_TD},{IN_GS_TD},{IN_GB_TD},{IN_BS_TD},{IN_BB_TD},{IN_RS_TD},{IN_RB_TD},{IN_BKS_TD},{IN_1ST_TD},{IN_2ND_TD},{IN_3RD_TD},{IN_4TH_TD},{IN_5TH_TD},{IN_6TH_TD},{IN_7TH_TD},{IN_8TH_TD},{IN_9TH_TD},{IN_BLACK_BELT_INTL_ID},{IN_BLACK_BELT_NUMBER})'
     cn = get_connection(sql_db = schema)
     execute_sql(connection=cn, sql=query)
+    cn.close()
 
 ## tab 3 ##
 def sp_commit_testing_results(student_id, testing_date):
@@ -280,10 +280,12 @@ def sp_view_club_equipment_transactions():
     t.id,
     concat(first_name, " ", last_name) as `name`,
     t.item_id,
+    ce.item_description,
     t.qty,
     t.amount_paid,
     pay_date
     from club_equipment_transactions t
+    left join club_equipment ce on ce.id = t.item_id
     left join students s on s.id = t.student_id
     order by t.id desc
     """
@@ -340,6 +342,18 @@ def update_transaction_item(transaction_id, item_id):
 
 def sp_club_equipment_data_v2():
     query = "call sp_club_equipment_data_v2;"
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+
+def get_tkd_competition_levels():
+    query = "select id, competition_level from tkd_competition_interest;"
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+
+def get_krt_competition_levels():
+    query = "select id, competition_level from krt_competition_interest;"
     cn = get_connection(sql_db = schema)
     df = get_dataframe(connection=cn, sql=query)
     return df

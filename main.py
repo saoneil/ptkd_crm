@@ -5,6 +5,7 @@ from tkinter import simpledialog
 import numpy as np
 from datetime import datetime, timedelta
 import db, email_handler_google
+from tkinter import font
 
 
 window_width = 1275
@@ -49,6 +50,13 @@ class MyApp(tk.Tk):
         self.entry_widgets_testing_results = {}
         self.entry_widgets_add_payment = {}
         self.tax_var = tk.IntVar()
+        
+        # Calendar dialog function
+        self.calendar_dialog = None
+        # Save button reference for color changes
+        self.save_button = None
+        # Store original values for comparison
+        self.original_student_values = {}
         self.club_var = tk.IntVar(value=0)
         self.method_var = tk.IntVar(value=1)
         self.existing_student_dropdown_value = tk.StringVar()
@@ -325,94 +333,444 @@ class MyApp(tk.Tk):
         print("Student Added to DB")
     def existing_student_selection_tab2_command(self, event=None):
         selected_value = self.existing_student_dropdown_value.get()
-        self.student_id = selected_value[0:(selected_value.index("-")-1)]
+        print(f"Selected value: {selected_value}")  # Debug print
+        
+        # Find student ID from the selected name
+        student_id = None
+        if hasattr(self, 'existing_student_data') and self.existing_student_data:
+            print(f"Available students: {len(self.existing_student_data)}")  # Debug print
+            for student in self.existing_student_data:
+                if student['name'] == selected_value:
+                    student_id = student['id']
+                    print(f"Found student ID: {student_id}")  # Debug print
+                    break
+        else:
+            print("No student data available")  # Debug print
+        
+        if not student_id:
+            print("No student ID found, returning")  # Debug print
+            return
+            
+        self.student_id = student_id
         df = db.sp_view_student_by_id(self.student_id)
+        print(f"Loaded student data for ID: {student_id}")  # Debug print
         if selected_value:
+            # Helper function to format values (replace None with empty string)
+            def format_value(value):
+                if pd.isna(value) or value is None or str(value) == 'None':
+                    return ""
+                return str(value)
+            
+            # Helper function to format date values specifically
+            def format_date_value(value):
+                if pd.isna(value) or value is None or str(value) == 'None':
+                    return ""
+                # Convert datetime.date to string in YYYY-MM-DD format
+                if hasattr(value, 'strftime'):
+                    return value.strftime('%Y-%m-%d')
+                return str(value)
+            
+            
             student_info = {
-                            "First Name:": f"{df.loc[0,'first_name']}",
-                            "Last Name:": f"{df.loc[0,'last_name']}",
-                            "DOB (yyyy-mm-dd):": f"{df.loc[0,'dob']}",
-                            "DOB-approx:": f"{df.loc[0,'dob_approx']}",
-                            "Start Date (yyyy-mm-dd):": f"{df.loc[0,'start_date']}",
-                            "Active:": f"{df.loc[0,'active']}",
-                            "Trial Student:": f"{df.loc[0,'trial_student']}",
-                            "Wait List:": f"{df.loc[0,'wait_list']}",
-                            "Current Rank:": f"{df.loc[0,'current_rank']}", 
-                            "Does Karate:": f"{df.loc[0,'does_karate']}", 
-                            "Local Comp Interest:": f"{df.loc[0,'local_competition_interest']}", 
-                            "Nat Comp Interest:": f"{df.loc[0,'national_competition_interest']}", 
-                            "Intl Comp Interest:": f"{df.loc[0,'international_competition_interest']}", 
-                            "Karate Prov Team:": f"{df.loc[0,'karate_prov_team']}", 
-                            "Signed Waiver:": f"{df.loc[0,'signed_waiver']}", 
-                            "Profile Comment:": f"{df.loc[0,'profile_comment']}", 
-                            "Email 1:": f"{df.loc[0,'email1']}", 
-                            "Email 2:": f"{df.loc[0,'email2']}", 
-                            "Email 3:": f"{df.loc[0,'email3']}", 
-                            "Phone 1:": f"{df.loc[0,'phone1']}", 
-                            "Phone 2:": f"{df.loc[0,'phone2']}", 
-                            "Phone 3:": f"{df.loc[0,'phone3']}", 
-                            "YS Test Date:": f"{df.loc[0,'yellow_stripe_testdate']}", 
-                            "YB Test Date:": f"{df.loc[0,'yellow_belt_testdate']}", 
-                            "GS Test Date:": f"{df.loc[0,'green_stripe_testdate']}", 
-                            "GB Test Date:": f"{df.loc[0,'green_belt_testdate']}", 
-                            "BS Test Date:": f"{df.loc[0,'blue_stripe_testdate']}", 
-                            "BB Test Date:": f"{df.loc[0,'blue_belt_testdate']}", 
-                            "RS Test Date:": f"{df.loc[0,'red_stripe_testdate']}", 
-                            "RB Test Date:": f"{df.loc[0,'red_belt_testdate']}", 
-                            "BKS Test Date:": f"{df.loc[0,'black_stripe_testdate']}",
-                            "1st Dan Test Date:": f"{df.loc[0,'1st_dan_testdate']}", 
+                            "First Name:": format_value(df.loc[0,'first_name']),
+                            "Last Name:": format_value(df.loc[0,'last_name']),
+                            "DOB (yyyy-mm-dd):": format_date_value(df.loc[0,'dob']),
+                            "DOB-approx:": str(df.loc[0,'dob_approx']) if not pd.isna(df.loc[0,'dob_approx']) else "0",
+                            "Start Date (yyyy-mm-dd):": format_date_value(df.loc[0,'start_date']),
+                            "Active:": str(df.loc[0,'active']) if not pd.isna(df.loc[0,'active']) else "0",
+                            "Trial Student:": str(df.loc[0,'trial_student']) if not pd.isna(df.loc[0,'trial_student']) else "0",
+                            "Wait List:": str(df.loc[0,'wait_list']) if not pd.isna(df.loc[0,'wait_list']) else "0",
+                            "Current Rank:": format_value(df.loc[0,'current_rank']), 
+                            "Does Karate:": str(df.loc[0,'does_karate']) if not pd.isna(df.loc[0,'does_karate']) else "0", 
+                            "TKD Comp Interest:": str(df.loc[0,'tkd_competition_interest_level']) if not pd.isna(df.loc[0,'tkd_competition_interest_level']) else "1", 
+                            "KRT Comp Interest:": str(df.loc[0,'krt_competition_interest_level']) if not pd.isna(df.loc[0,'krt_competition_interest_level']) else "1", 
+                            "Signed Waiver:": str(df.loc[0,'signed_waiver']) if not pd.isna(df.loc[0,'signed_waiver']) else "0", 
+                            "Aurora Member:": str(df.loc[0,'aurora_member']) if not pd.isna(df.loc[0,'aurora_member']) else "0", 
+                            "Profile Comment:": format_value(df.loc[0,'profile_comment']), 
+                            "Email 1:": format_value(df.loc[0,'email1']), 
+                            "Email 2:": format_value(df.loc[0,'email2']), 
+                            "Email 3:": format_value(df.loc[0,'email3']), 
+                            "Phone 1:": format_value(df.loc[0,'phone1']), 
+                            "Phone 2:": format_value(df.loc[0,'phone2']), 
+                            "Phone 3:": format_value(df.loc[0,'phone3']), 
+                            "Payment Good Till:": format_date_value(df.loc[0,'payment_good_till']), 
+                            "Pay Rate:": str(df.loc[0,'pay_rate']) if not pd.isna(df.loc[0,'pay_rate']) else "0", 
+                            "Gender:": format_value(df.loc[0,'gender']), 
+                            "YS Test Date:": format_date_value(df.loc[0,'yellow_stripe_testdate']), 
+                            "YB Test Date:": format_date_value(df.loc[0,'yellow_belt_testdate']), 
+                            "GS Test Date:": format_date_value(df.loc[0,'green_stripe_testdate']), 
+                            "GB Test Date:": format_date_value(df.loc[0,'green_belt_testdate']), 
+                            "BS Test Date:": format_date_value(df.loc[0,'blue_stripe_testdate']), 
+                            "BB Test Date:": format_date_value(df.loc[0,'blue_belt_testdate']), 
+                            "RS Test Date:": format_date_value(df.loc[0,'red_stripe_testdate']), 
+                            "RB Test Date:": format_date_value(df.loc[0,'red_belt_testdate']), 
+                            "BKS Test Date:": format_date_value(df.loc[0,'black_stripe_testdate']),
+                            "1st Dan Test Date:": format_date_value(df.loc[0,'1st_dan_testdate']), 
+                            "2nd Dan Test Date:": format_date_value(df.loc[0,'2nd_dan_testdate']), 
+                            "3rd Dan Test Date:": format_date_value(df.loc[0,'3rd_dan_testdate']), 
+                            "4th Dan Test Date:": format_date_value(df.loc[0,'4th_dan_testdate']), 
+                            "5th Dan Test Date:": format_date_value(df.loc[0,'5th_dan_testdate']), 
+                            "6th Dan Test Date:": format_date_value(df.loc[0,'6th_dan_testdate']), 
+                            "7th Dan Test Date:": format_date_value(df.loc[0,'7th_dan_testdate']), 
+                            "8th Dan Test Date:": format_date_value(df.loc[0,'8th_dan_testdate']), 
+                            "9th Dan Test Date:": format_date_value(df.loc[0,'9th_dan_testdate']), 
+                            "Black Belt Intl ID:": str(df.loc[0,'black_belt_international_id']) if not pd.isna(df.loc[0,'black_belt_international_id']) else "", 
+                            "Black Belt Number:": format_value(df.loc[0,'black_belt_number']), 
+                            "Record Creation:": format_value(df.loc[0,'record_creation_timestamp']), 
+                            "Record Update:": format_value(df.loc[0,'record_update_timestamp']), 
                         }
 
-            # Update entry widgets in top_right_frame_tab2
+            # Store original values for comparison
+            self.original_student_values = {}
+            
+            # Store the original values from the database
             for field, value in student_info.items():
+                self.original_student_values[field] = value
+
+            # Create a clean field mapping system
+            field_mapping = {
+                "First Name:": (2, 1),
+                "Last Name:": (3, 1),
+                "Email 1:": (4, 1),
+                "Email 2:": (5, 1),
+                "Email 3:": (6, 1),
+                "Phone 1:": (7, 1),
+                "Phone 2:": (8, 1),
+                "Phone 3:": (9, 1),
+                "Payment Good Till:": (10, 1),
+                "Pay Rate:": (11, 1),
+                "Start Date (yyyy-mm-dd):": (12, 1),
+                "Gender:": (13, 1),
+                "DOB (yyyy-mm-dd):": (14, 1),
+                "DOB-approx:": (15, 1),
+                "Active:": (16, 1),
+                "Trial Student:": (17, 1),
+                "Wait List:": (18, 1),
+                "Does Karate:": (19, 1),
+                "Current Rank:": (2, 3),
+                "YS Test Date:": (3, 3),
+                "YB Test Date:": (4, 3),
+                "GS Test Date:": (5, 3),
+                "GB Test Date:": (6, 3),
+                "BS Test Date:": (7, 3),
+                "BB Test Date:": (8, 3),
+                "RS Test Date:": (9, 3),
+                "RB Test Date:": (10, 3),
+                "BKS Test Date:": (11, 3),
+                "1st Dan Test Date:": (12, 3),
+                "2nd Dan Test Date:": (13, 3),
+                "3rd Dan Test Date:": (14, 3),
+                "4th Dan Test Date:": (15, 3),
+                "5th Dan Test Date:": (16, 3),
+                "6th Dan Test Date:": (17, 3),
+                "7th Dan Test Date:": (18, 3),
+                "8th Dan Test Date:": (19, 3),
+                "9th Dan Test Date:": (20, 3),
+                "Black Belt Intl ID:": (2, 5),
+                "Black Belt Number:": (3, 5),
+                "TKD Comp Interest:": (4, 5),
+                "KRT Comp Interest:": (5, 5),
+                "Signed Waiver:": (6, 5),
+                "Aurora Member:": (7, 5),
+                "Record Creation:": (8, 5),
+                "Record Update:": (9, 5)
+            }
+            
+            # Update widgets using stored widget map first, then grid lookup
+            for field, value in student_info.items():
+                # Prefer stored widget/variable mapping when available
                 if field in self.entry_widgets_existing_student:
-                    self.entry_widgets_existing_student[field].delete(0, "end")
-                    self.entry_widgets_existing_student[field].insert(0, value)
+                    mapped = self.entry_widgets_existing_student[field]
+                    if isinstance(mapped, tk.BooleanVar):
+                        mapped.set(value == "1" or value == 1 or value == "True" or value is True)
+                        continue
+                    if isinstance(mapped, tk.Entry):
+                        mapped.delete(0, "end")
+                        mapped.insert(0, value)
+                        continue
+                    # Competition picker stored as Frame -> Entry with attributes
+                    if isinstance(mapped, tk.Frame) and field in ["TKD Comp Interest:", "KRT Comp Interest:"]:
+                        # Find entry inside
+                        for child in mapped.winfo_children():
+                            if isinstance(child, tk.Entry):
+                                # Set id and display text based on options
+                                options = getattr(child, '_comp_options', [])
+                                # value is expected to be id as string
+                                try:
+                                    vid = int(value) if value not in (None, "", "None") else None
+                                except Exception:
+                                    vid = None
+                                display_text = ""
+                                if vid is not None:
+                                    for oid, otext in options:
+                                        if oid == vid:
+                                            child._comp_id = vid
+                                            display_text = otext
+                                            break
+                                child.delete(0, tk.END)
+                                child.insert(0, display_text)
+                                break
+                        continue
+                    if isinstance(mapped, tk.Frame):
+                        # Date field frame containing an Entry
+                        for child in mapped.winfo_children():
+                            if isinstance(child, tk.Entry):
+                                child.delete(0, "end")
+                                child.insert(0, value)
+                                break
+                        continue
+                if field in field_mapping:
+                    row, col = field_mapping[field]
+                    # Find the widget at this grid position
+                    widget = None
+                    for child in self.top_right_frame_tab2.winfo_children():
+                        if hasattr(child, 'grid_info'):
+                            info = child.grid_info()
+                            if info.get('row') == row and info.get('column') == col + 1:
+                                widget = child
+                                break
+                    
+                    if widget:
+                        # Handle different widget types
+                        if isinstance(widget, tk.Frame):
+                            # For date fields wrapped in Frames, find the Entry widget inside
+                            entry_widget = None
+                            for child in widget.winfo_children():
+                                if isinstance(child, tk.Entry):
+                                    entry_widget = child
+                                    break
+                            if entry_widget:
+                                entry_widget.delete(0, "end")
+                                entry_widget.insert(0, value)
+                        elif isinstance(widget, (tk.Entry,)):
+                            # Regular Entry widget
+                            widget.delete(0, "end")
+                            widget.insert(0, value)
+                        else:
+                            # Non-entry widgets (e.g., Checkbutton) are handled via stored map; skip here
+                            pass
+            
+            # Reset button color when loading new student
+            if self.save_button:
+                self.save_button.config(bg="SystemButtonFace")
+            
+            # Suppress extra logging; keep only comparison later
         else:
             # Clear entry widgets if no student is selected
-            for entry_widget in self.entry_widgets_existing_student.values():
-                entry_widget.delete(0, "end")
+            for widget in self.entry_widgets_existing_student.values():
+                if isinstance(widget, tk.BooleanVar):
+                    widget.set(False)
+                elif isinstance(widget, tk.Checkbutton):
+                    widget.deselect()
+                elif isinstance(widget, ttk.Combobox):
+                    widget.set("")
+                elif isinstance(widget, tk.Frame):
+                    # For date fields wrapped in Frames, find the Entry widget inside
+                    for child in widget.winfo_children():
+                        if isinstance(child, tk.Entry):
+                            child.delete(0, "end")
+                            break
+                else:
+                    widget.delete(0, "end")
     def commit_changes_existing_student_command(self):
-        for field, entry_widget in self.entry_widgets_existing_student.items():
-            data = entry_widget.get()
+        # Initialize all variables
+        first_name = last_name = email1 = email2 = email3 = phone1 = phone2 = phone3 = ""
+        dob = dob_approx = start_date = active = trial_student = wait_list = current_rank = does_karate = 0
+        tkd_comp_interest = krt_comp_interest = signed_waiver = aurora_member = 0
+        profile_comment = payment_good_till = pay_rate = gender = ""
+        ys_testdate = yb_testdate = gs_testdate = gb_testdate = bs_testdate = bb_testdate = rs_testdate = rb_testdate = bks_testdate = "NULL"
+        first_dan_testdate = second_dan_testdate = third_dan_testdate = fourth_dan_testdate = fifth_dan_testdate = sixth_dan_testdate = seventh_dan_testdate = eighth_dan_testdate = ninth_dan_testdate = "NULL"
+        black_belt_intl_id = "NULL"
+        black_belt_number = "NULL"
+        
+        # Use the same field mapping system for reading values
+        field_mapping = {
+            "First Name:": (2, 1),
+            "Last Name:": (3, 1),
+            "Email 1:": (4, 1),
+            "Email 2:": (5, 1),
+            "Email 3:": (6, 1),
+            "Phone 1:": (7, 1),
+            "Phone 2:": (8, 1),
+            "Phone 3:": (9, 1),
+            "Payment Good Till:": (10, 1),
+            "Pay Rate:": (11, 1),
+            "Start Date (yyyy-mm-dd):": (12, 1),
+            "Gender:": (13, 1),
+            "DOB (yyyy-mm-dd):": (14, 1),
+            "DOB-approx:": (15, 1),
+            "Active:": (16, 1),
+            "Trial Student:": (17, 1),
+            "Wait List:": (18, 1),
+            "Does Karate:": (19, 1),
+            "Current Rank:": (2, 3),
+            "YS Test Date:": (3, 3),
+            "YB Test Date:": (4, 3),
+            "GS Test Date:": (5, 3),
+            "GB Test Date:": (6, 3),
+            "BS Test Date:": (7, 3),
+            "BB Test Date:": (8, 3),
+            "RS Test Date:": (9, 3),
+            "RB Test Date:": (10, 3),
+            "BKS Test Date:": (11, 3),
+            "1st Dan Test Date:": (12, 3),
+            "2nd Dan Test Date:": (13, 3),
+            "3rd Dan Test Date:": (14, 3),
+            "4th Dan Test Date:": (15, 3),
+            "5th Dan Test Date:": (16, 3),
+            "6th Dan Test Date:": (17, 3),
+            "7th Dan Test Date:": (18, 3),
+            "8th Dan Test Date:": (19, 3),
+            "9th Dan Test Date:": (20, 3),
+            "Black Belt Intl ID:": (2, 5),
+            "Black Belt Number:": (3, 5),
+            "TKD Comp Interest:": (4, 5),
+            "KRT Comp Interest:": (5, 5),
+            "Signed Waiver:": (6, 5),
+            "Aurora Member:": (7, 5),
+            "Record Creation:": (8, 5),
+            "Record Update:": (9, 5)
+        }
+        
+        # Read values preferring stored widget/variable map, then grid lookup
+        for field, (row, col) in field_mapping.items():
+            data = ""
+            if field in self.entry_widgets_existing_student:
+                mapped = self.entry_widgets_existing_student[field]
+                if isinstance(mapped, tk.BooleanVar):
+                    data = 1 if mapped.get() else 0
+                elif isinstance(mapped, tk.Entry):
+                    data = mapped.get()
+                elif isinstance(mapped, ttk.Combobox):
+                    # For competition interest dropdowns, extract the ID from the selection
+                    if field in ["TKD Comp Interest:", "KRT Comp Interest:"]:
+                        selection = mapped.get()
+                        if selection and " - " in selection:
+                            data = selection.split(" - ")[0]  # Extract ID part
+                        else:
+                            # If no selection and original value exists, use it; otherwise default to 1
+                            original_val = self.original_student_values.get(field)
+                            data = str(original_val) if original_val not in (None, "", "None") else "1"
+                    else:
+                        data = mapped.get()
+                elif isinstance(mapped, tk.Frame):
+                    for child in mapped.winfo_children():
+                        if isinstance(child, tk.Entry):
+                            if field in ["TKD Comp Interest:", "KRT Comp Interest:"]:
+                                # Prefer stored selected id
+                                sel_id = getattr(child, '_comp_id', None)
+                                if sel_id is not None:
+                                    data = str(sel_id)
+                                else:
+                                    # Fall back to original value if no selection
+                                    original_val = self.original_student_values.get(field)
+                                    data = str(original_val) if original_val not in (None, "", "None") else "1"
+                            else:
+                                data = child.get()
+                            break
+                else:
+                    # Fallback to grid lookup for any not in map
+                    pass
+            if data == "":
+                # Fallback: grid lookup
+                widget = None
+                for child in self.top_right_frame_tab2.winfo_children():
+                    if hasattr(child, 'grid_info'):
+                        info = child.grid_info()
+                        if info.get('row') == row and info.get('column') == col + 1:
+                            widget = child
+                            break
+                if widget:
+                    if isinstance(widget, tk.Frame):
+                        for child in widget.winfo_children():
+                            if isinstance(child, tk.Entry):
+                                data = child.get()
+                                break
+                    elif isinstance(widget, tk.Entry):
+                        data = widget.get()
+                
             if field == "First Name:":
                 first_name = data
             elif field == "Last Name:":
                 last_name = data
             elif field == "DOB (yyyy-mm-dd):":
-                if data == "None":
+                if data == "None" or data == "" or data is None:
                     dob = "NULL"
                 else:
-                    dob = f"'{data}'"
+                    # Validate YYYY-MM-DD; if invalid, treat as NULL to avoid MySQL errors
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        dob = f"'{data}'"
+                    except Exception:
+                        dob = "NULL"
             elif field == "DOB-approx:":
-                dob_approx = data
+                dob_approx = 1 if (data == "1" or data == 1 or data == "True" or data is True) else 0
             elif field == "Start Date (yyyy-mm-dd):":
-                if data == "None":
-                    start_date = "Null"
+                if data == "None" or data == "" or data is None:
+                    start_date = "NULL"
                 else:
-                    start_date = f"'{data}'"
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        start_date = f"'{data}'"
+                    except Exception:
+                        start_date = "NULL"
             elif field == "Active:":
-                active = data
+                active = 1 if (data == "1" or data == 1 or data == "True" or data is True) else 0
             elif field == "Trial Student:":
-                trial_student = data
+                trial_student = 1 if (data == "1" or data == 1 or data == "True" or data is True) else 0
             elif field == "Wait List:":
-                wait_list = data
+                wait_list = 1 if (data == "1" or data == 1 or data == "True" or data is True) else 0
             elif field == "Current Rank:":
                 current_rank = data
             elif field == "Does Karate:":
-                does_karate = data
-            elif field == "Local Comp Interest:":
-                local_comp_interest = data
-            elif field == "Nat Comp Interest:":
-                nat_comp_interest = data
-            elif field == "Intl Comp Interest:":
-                intl_comp_interest = data                            
-            elif field == "Karate Prov Team:":
-                karate_prov_team = data
+                does_karate = 1 if (data == "1" or data == 1 or data == "True" or data is True) else 0
+            elif field == "TKD Comp Interest:":
+                if data == "" or data is None:
+                    tkd_comp_interest = 1
+                else:
+                    try:
+                        tkd_comp_interest = int(data)
+                    except ValueError:
+                        tkd_comp_interest = 1
+            elif field == "KRT Comp Interest:":
+                if data == "" or data is None:
+                    krt_comp_interest = 1
+                else:
+                    try:
+                        krt_comp_interest = int(data)
+                    except ValueError:
+                        krt_comp_interest = 1
+            elif field == "Aurora Member:":
+                aurora_member = 1 if (data == "1" or data == 1 or data == "True" or data is True) else 0
+            elif field == "Payment Good Till:":
+                if data == "None" or data == "" or data is None:
+                    payment_good_till = "NULL"
+                else:
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        payment_good_till = f"'{data}'"
+                    except Exception:
+                        payment_good_till = "NULL"
+            elif field == "Pay Rate:":
+                if data == "" or data is None:
+                    pay_rate = 0
+                else:
+                    try:
+                        pay_rate = int(data)
+                    except ValueError:
+                        pay_rate = 0
+            elif field == "Gender:":
+                gender = data
             elif field == "Signed Waiver:":
-                signed_waiver = data
+                signed_waiver = 1 if (data == "1" or data == 1 or data == "True" or data is True) else 0
             elif field == "Profile Comment:":
-                profile_comment = data
+                # Pass plain string; DB layer applies quoting. Empty -> empty string
+                profile_comment = "" if (data is None or data == "") else data
             elif field == "Email 1:":
                 email1 = data
             elif field == "Email 2:":
@@ -426,62 +784,660 @@ class MyApp(tk.Tk):
             elif field == "Phone 3:":
                 phone3 = data
             elif field == "YS Test Date:":
-                if data == "None":
+                if data == "None" or data == "" or data is None:
                     ys_testdate = "NULL"
                 else:
-                    ys_testdate = f"'{data}'"
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        ys_testdate = f"'{data}'"
+                    except Exception:
+                        ys_testdate = "NULL"
             elif field == "YB Test Date:":
-                if data == "None":
+                if data == "None" or data == "" or data is None:
                     yb_testdate = "NULL"
                 else:
-                    yb_testdate = f"'{data}'"
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        yb_testdate = f"'{data}'"
+                    except Exception:
+                        yb_testdate = "NULL"
             elif field == "GS Test Date:":
-                if data == "None":
+                if data == "None" or data == "" or data is None:
                     gs_testdate = "NULL"
                 else:
-                    gs_testdate = f"'{data}'"
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        gs_testdate = f"'{data}'"
+                    except Exception:
+                        gs_testdate = "NULL"
             elif field == "GB Test Date:":
-                if data == "None":
+                if data == "None" or data == "" or data is None:
                     gb_testdate = "NULL"
                 else:
-                    gb_testdate = f"'{data}'"
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        gb_testdate = f"'{data}'"
+                    except Exception:
+                        gb_testdate = "NULL"
             elif field == "BS Test Date:":
-                if data == "None":
+                if data == "None" or data == "" or data is None:
                     bs_testdate = "NULL"
                 else:
-                    bs_testdate = f"'{data}'"
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        bs_testdate = f"'{data}'"
+                    except Exception:
+                        bs_testdate = "NULL"
             elif field == "BB Test Date:":
-                if data == "None":
+                if data == "None" or data == "" or data is None:
                     bb_testdate = "NULL"
                 else:
-                    bb_testdate = f"'{data}'"
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        bb_testdate = f"'{data}'"
+                    except Exception:
+                        bb_testdate = "NULL"
             elif field == "RS Test Date:":
-                if data == "None":
+                if data == "None" or data == "" or data is None:
                     rs_testdate = "NULL"
                 else:
-                    rs_testdate = f"'{data}'"
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        rs_testdate = f"'{data}'"
+                    except Exception:
+                        rs_testdate = "NULL"
             elif field == "RB Test Date:":
-                if data == "None":
+                if data == "None" or data == "" or data is None:
                     rb_testdate = "NULL"
                 else:
-                    rb_testdate = f"'{data}'"
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        rb_testdate = f"'{data}'"
+                    except Exception:
+                        rb_testdate = "NULL"
             elif field == "BKS Test Date:":
-                if data == "None":
+                if data == "None" or data == "" or data is None:
                     bks_testdate = "NULL"
                 else:
-                    bks_testdate = f"'{data}'"
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        bks_testdate = f"'{data}'"
+                    except Exception:
+                        bks_testdate = "NULL"
             elif field == "1st Dan Test Date:":
-                if data == "None":
+                if data == "None" or data == "" or data is None:
                     first_dan_testdate = "NULL"
                 else:
-                    first_dan_testdate = f"'{data}'"
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        first_dan_testdate = f"'{data}'"
+                    except Exception:
+                        first_dan_testdate = "NULL"
+            elif field == "2nd Dan Test Date:":
+                if data == "None" or data == "" or data is None:
+                    second_dan_testdate = "NULL"
+                else:
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        second_dan_testdate = f"'{data}'"
+                    except Exception:
+                        second_dan_testdate = "NULL"
+            elif field == "3rd Dan Test Date:":
+                if data == "None" or data == "" or data is None:
+                    third_dan_testdate = "NULL"
+                else:
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        third_dan_testdate = f"'{data}'"
+                    except Exception:
+                        third_dan_testdate = "NULL"
+            elif field == "4th Dan Test Date:":
+                if data == "None" or data == "" or data is None:
+                    fourth_dan_testdate = "NULL"
+                else:
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        fourth_dan_testdate = f"'{data}'"
+                    except Exception:
+                        fourth_dan_testdate = "NULL"
+            elif field == "5th Dan Test Date:":
+                if data == "None" or data == "" or data is None:
+                    fifth_dan_testdate = "NULL"
+                else:
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        fifth_dan_testdate = f"'{data}'"
+                    except Exception:
+                        fifth_dan_testdate = "NULL"
+            elif field == "6th Dan Test Date:":
+                if data == "None" or data == "" or data is None:
+                    sixth_dan_testdate = "NULL"
+                else:
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        sixth_dan_testdate = f"'{data}'"
+                    except Exception:
+                        sixth_dan_testdate = "NULL"
+            elif field == "7th Dan Test Date:":
+                if data == "None" or data == "" or data is None:
+                    seventh_dan_testdate = "NULL"
+                else:
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        seventh_dan_testdate = f"'{data}'"
+                    except Exception:
+                        seventh_dan_testdate = "NULL"
+            elif field == "8th Dan Test Date:":
+                if data == "None" or data == "" or data is None:
+                    eighth_dan_testdate = "NULL"
+                else:
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        eighth_dan_testdate = f"'{data}'"
+                    except Exception:
+                        eighth_dan_testdate = "NULL"
+            elif field == "9th Dan Test Date:":
+                if data == "None" or data == "" or data is None:
+                    ninth_dan_testdate = "NULL"
+                else:
+                    # Validate YYYY-MM-DD format
+                    try:
+                        from datetime import datetime as _dt
+                        _dt.strptime(data, "%Y-%m-%d")
+                        ninth_dan_testdate = f"'{data}'"
+                    except Exception:
+                        ninth_dan_testdate = "NULL"
+            elif field == "Black Belt Intl ID:":
+                if data == "None" or data == "" or data is None:
+                    black_belt_intl_id = "NULL"
+                else:
+                    try:
+                        black_belt_intl_id = int(data)
+                    except ValueError:
+                        black_belt_intl_id = "NULL"
+            elif field == "Black Belt Number:":
+                if data == "None" or data == "" or data is None:
+                    black_belt_number = "NULL"
+                else:
+                    black_belt_number = f"'{data}'"
 
-            try:
-                entry_widget.delete(0, 'end')
-            except:
-                pass
-        df = db.sp_commit_changes_existing_student(self.student_id, first_name, last_name, dob, dob_approx, start_date, active, trial_student, wait_list, current_rank, does_karate, local_comp_interest, nat_comp_interest, intl_comp_interest, karate_prov_team, signed_waiver, profile_comment, email1, email2, email3, phone1, phone2, phone3, ys_testdate, yb_testdate, gs_testdate, gb_testdate, bs_testdate, bb_testdate, rs_testdate, rb_testdate, bks_testdate, first_dan_testdate)
-        print("Changes to Existing Student Complete")
+            # Do not clear widgets before save; keep user inputs intact
+        # Print before/after comparison
+        print("\n=== BEFORE/AFTER COMPARISON ===")
+        comparison_fields = [
+            ("First Name:", first_name),
+            ("Last Name:", last_name),
+            ("Email 1:", email1),
+            ("Email 2:", email2),
+            ("Email 3:", email3),
+            ("Phone 1:", phone1),
+            ("Phone 2:", phone2),
+            ("Phone 3:", phone3),
+            ("DOB (yyyy-mm-dd):", dob),
+            ("DOB-approx:", dob_approx),
+            ("Start Date (yyyy-mm-dd):", start_date),
+            ("Active:", active),
+            ("Trial Student:", trial_student),
+            ("Wait List:", wait_list),
+            ("Current Rank:", current_rank),
+            ("Does Karate:", does_karate),
+            ("TKD Comp Interest:", tkd_comp_interest),
+            ("KRT Comp Interest:", krt_comp_interest),
+            ("Signed Waiver:", signed_waiver),
+            ("Aurora Member:", aurora_member),
+            ("Profile Comment:", profile_comment),
+            ("Payment Good Till:", payment_good_till),
+            ("Pay Rate:", pay_rate),
+            ("Gender:", gender)
+        ]
+        
+        # Execute the stored procedure
+        try:
+            db.sp_commit_changes_existing_student(
+                self.student_id,
+                first_name,
+                last_name,
+                dob,
+                dob_approx,
+                start_date,
+                active,
+                trial_student,
+                wait_list,
+                current_rank,
+                does_karate,
+                tkd_comp_interest,
+                krt_comp_interest,
+                signed_waiver,
+                aurora_member,
+                profile_comment,
+                email1,
+                email2,
+                email3,
+                phone1,
+                phone2,
+                phone3,
+                payment_good_till,
+                pay_rate,
+                gender,
+                ys_testdate,
+                yb_testdate,
+                gs_testdate,
+                gb_testdate,
+                bs_testdate,
+                bb_testdate,
+                rs_testdate,
+                rb_testdate,
+                bks_testdate,
+                first_dan_testdate,
+                second_dan_testdate,
+                third_dan_testdate,
+                fourth_dan_testdate,
+                fifth_dan_testdate,
+                sixth_dan_testdate,
+                seventh_dan_testdate,
+                eighth_dan_testdate,
+                ninth_dan_testdate,
+                black_belt_intl_id,
+                black_belt_number,
+            )
+            # Reset button color after saving
+            if self.save_button:
+                self.save_button.config(bg="SystemButtonFace")
+            # Update original values to current values after successful save
+            for field, mapped in self.entry_widgets_existing_student.items():
+                if isinstance(mapped, tk.BooleanVar):
+                    current_value = 1 if mapped.get() else 0
+                elif isinstance(mapped, tk.Entry):
+                    current_value = mapped.get()
+                elif isinstance(mapped, ttk.Combobox):
+                    # For competition interest dropdowns, extract the ID from the selection
+                    if field in ["TKD Comp Interest:", "KRT Comp Interest:"]:
+                        selection = mapped.get()
+                        if selection and " - " in selection:
+                            current_value = selection.split(" - ")[0]  # Extract ID part
+                        else:
+                            current_value = "1"  # Default to ID 1 if no selection
+                    else:
+                        current_value = mapped.get()
+                elif isinstance(mapped, tk.Frame):
+                    current_value = ""
+                    for child in mapped.winfo_children():
+                        if isinstance(child, tk.Entry):
+                            current_value = child.get()
+                            break
+                else:
+                    continue
+                self.original_student_values[field] = current_value
+            messagebox.showinfo("Success", "Changes saved successfully.")
+        except Exception as e:
+            messagebox.showerror("Save failed", str(e))
+    
+    def show_calendar_dialog(self, entry_widget):
+        """Show a simple calendar dialog for date selection"""
+        if self.calendar_dialog:
+            self.calendar_dialog.destroy()
+        
+        self.calendar_dialog = tk.Toplevel(self)
+        self.calendar_dialog.title("Select Date")
+        self.calendar_dialog.geometry("300x300")
+        self.calendar_dialog.resizable(False, False)
+        self.calendar_dialog.transient(self)
+        self.calendar_dialog.grab_set()
+        
+        # Center the dialog
+        self.calendar_dialog.update_idletasks()
+        x = (self.calendar_dialog.winfo_screenwidth() // 2) - (300 // 2)
+        y = (self.calendar_dialog.winfo_screenheight() // 2) - (300 // 2)
+        self.calendar_dialog.geometry(f"300x300+{x}+{y}")
+        
+        # Create calendar frame
+        calendar_frame = tk.Frame(self.calendar_dialog)
+        calendar_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Current date
+        now = datetime.now()
+        self.calendar_year = now.year
+        self.calendar_month = now.month
+        self.calendar_day = now.day
+        
+        # Month/Year navigation with fast controls
+        nav_frame = tk.Frame(calendar_frame)
+        nav_frame.pack(fill=tk.X, pady=(0, 10))
+
+        # Prev year
+        prev_year_btn = tk.Button(nav_frame, text="«", width=2, command=self.prev_year)
+        prev_year_btn.pack(side=tk.LEFT)
+
+        # Prev month
+        prev_button = tk.Button(nav_frame, text="<", width=2, command=self.prev_month)
+        prev_button.pack(side=tk.LEFT, padx=(5, 0))
+
+        # Month dropdown
+        month_names = ["January", "February", "March", "April", "May", "June",
+                       "July", "August", "September", "October", "November", "December"]
+        self.month_var = tk.StringVar(value=month_names[self.calendar_month-1])
+        month_combo = ttk.Combobox(nav_frame, state="readonly", width=12, textvariable=self.month_var, values=month_names)
+        month_combo.pack(side=tk.LEFT, padx=(10, 10))
+        month_combo.bind('<<ComboboxSelected>>', self.on_calendar_month_change)
+
+        # Year spinbox
+        current_year = self.calendar_year
+        self.year_var = tk.IntVar(value=current_year)
+        year_spin = tk.Spinbox(nav_frame, from_=current_year-100, to=current_year+100, width=6, textvariable=self.year_var, command=self.on_calendar_year_change)
+        year_spin.pack(side=tk.LEFT)
+        # Also bind Enter / focus-out to commit
+        year_spin.bind('<Return>', lambda e: self.on_calendar_year_change())
+        year_spin.bind('<FocusOut>', lambda e: self.on_calendar_year_change())
+
+        # Next month
+        next_button = tk.Button(nav_frame, text=">", width=2, command=self.next_month)
+        next_button.pack(side=tk.LEFT, padx=(10, 5))
+
+        # Next year
+        next_year_btn = tk.Button(nav_frame, text="»", width=2, command=self.next_year)
+        next_year_btn.pack(side=tk.LEFT)
+        
+        # Calendar grid
+        self.calendar_frame = tk.Frame(calendar_frame)
+        self.calendar_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Buttons frame
+        button_frame = tk.Frame(calendar_frame)
+        button_frame.pack(fill=tk.X, pady=(10, 0))
+        
+        today_button = tk.Button(button_frame, text="Today", command=lambda: self.select_date(now.strftime("%Y-%m-%d")))
+        today_button.pack(side=tk.LEFT)
+        
+        clear_button = tk.Button(button_frame, text="Clear", command=lambda: self.select_date(""))
+        clear_button.pack(side=tk.LEFT, padx=(10, 0))
+        
+        cancel_button = tk.Button(button_frame, text="Cancel", command=self.calendar_dialog.destroy)
+        cancel_button.pack(side=tk.RIGHT)
+        
+        # Store reference to entry widget
+        self.calendar_entry_widget = entry_widget
+        
+        # Create calendar
+        self.create_calendar()
+    
+    def create_calendar(self):
+        """Create the calendar grid"""
+        # Clear existing widgets
+        for widget in self.calendar_frame.winfo_children():
+            widget.destroy()
+        
+        # Day headers
+        days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        for i, day in enumerate(days):
+            label = tk.Label(self.calendar_frame, text=day, font=("Arial", 10, "bold"))
+            label.grid(row=0, column=i, padx=2, pady=2)
+        
+        # Get first day of month and number of days
+        import calendar
+        first_day, num_days = calendar.monthrange(self.calendar_year, self.calendar_month)
+        
+        # Sync month/year controls if present
+        try:
+            if hasattr(self, 'month_var'):
+                names = ["January", "February", "March", "April", "May", "June",
+                         "July", "August", "September", "October", "November", "December"]
+                self.month_var.set(names[self.calendar_month-1])
+            if hasattr(self, 'year_var'):
+                self.year_var.set(self.calendar_year)
+        except Exception:
+            pass
+        
+        # Create day buttons
+        row = 1
+        col = first_day
+        
+        # Previous month days
+        prev_month = self.calendar_month - 1 if self.calendar_month > 1 else 12
+        prev_year = self.calendar_year if self.calendar_month > 1 else self.calendar_year - 1
+        _, prev_num_days = calendar.monthrange(prev_year, prev_month)
+        
+        for i in range(first_day):
+            day_num = prev_num_days - first_day + i + 1
+            button = tk.Button(self.calendar_frame, text=str(day_num), 
+                             command=lambda d=day_num, m=prev_month, y=prev_year: self.select_date(f"{y}-{m:02d}-{d:02d}"),
+                             fg="gray", state="normal")
+            button.grid(row=row, column=i, padx=2, pady=2, sticky="nsew")
+        
+        # Current month days
+        for day in range(1, num_days + 1):
+            button = tk.Button(self.calendar_frame, text=str(day), 
+                             command=lambda d=day: self.select_date(f"{self.calendar_year}-{self.calendar_month:02d}-{d:02d}"),
+                             fg="black")
+            button.grid(row=row, column=col, padx=2, pady=2, sticky="nsew")
+            
+            # Highlight today
+            if (self.calendar_year == datetime.now().year and 
+                self.calendar_month == datetime.now().month and 
+                day == datetime.now().day):
+                button.config(bg="lightblue")
+            
+            col += 1
+            if col > 6:
+                col = 0
+                row += 1
+        
+        # Next month days
+        next_month = self.calendar_month + 1 if self.calendar_month < 12 else 1
+        next_year = self.calendar_year if self.calendar_month < 12 else self.calendar_year + 1
+        
+        day_num = 1
+        while col <= 6:
+            button = tk.Button(self.calendar_frame, text=str(day_num), 
+                             command=lambda d=day_num, m=next_month, y=next_year: self.select_date(f"{y}-{m:02d}-{d:02d}"),
+                             fg="gray", state="normal")
+            button.grid(row=row, column=col, padx=2, pady=2, sticky="nsew")
+            col += 1
+            day_num += 1
+        
+        # Configure grid weights
+        for i in range(7):
+            self.calendar_frame.grid_columnconfigure(i, weight=1)
+    
+    def prev_month(self):
+        """Go to previous month"""
+        self.calendar_month -= 1
+        if self.calendar_month < 1:
+            self.calendar_month = 12
+            self.calendar_year -= 1
+        self.create_calendar()
+    
+    def next_month(self):
+        """Go to next month"""
+        self.calendar_month += 1
+        if self.calendar_month > 12:
+            self.calendar_month = 1
+            self.calendar_year += 1
+        self.create_calendar()
+
+    def prev_year(self):
+        """Go to previous year"""
+        self.calendar_year -= 1
+        self.create_calendar()
+
+    def next_year(self):
+        """Go to next year"""
+        self.calendar_year += 1
+        self.create_calendar()
+
+    def on_calendar_month_change(self, event=None):
+        """Handle month dropdown changes"""
+        names = ["January", "February", "March", "April", "May", "June",
+                 "July", "August", "September", "October", "November", "December"]
+        try:
+            selected = self.month_var.get()
+            self.calendar_month = names.index(selected) + 1
+        except Exception:
+            pass
+        self.create_calendar()
+
+    def on_calendar_year_change(self):
+        """Handle year spinbox changes"""
+        try:
+            year = int(self.year_var.get())
+            self.calendar_year = year
+        except Exception:
+            pass
+        self.create_calendar()
+    
+    def select_date(self, date_str):
+        """Select a date and update the entry widget"""
+        if self.calendar_entry_widget:
+            self.calendar_entry_widget.delete(0, tk.END)
+            if date_str:
+                self.calendar_entry_widget.insert(0, date_str)
+        if self.calendar_dialog:
+            self.calendar_dialog.destroy()
+        self.calendar_dialog = None
+    
+    def configure_dropdown_listbox(self, dropdown):
+        """Configure the dropdown listbox to be wider for better readability"""
+        try:
+            # Get the listbox widget from the dropdown
+            listbox = dropdown.tk.eval('ttk::combobox::PopdownWindow %s.l' % dropdown)
+            if listbox:
+                # Configure the listbox to be wider
+                dropdown.tk.call('ttk::combobox::PopdownWindow', dropdown, 'configure', '-width', 30)
+        except:
+            # If configuration fails, just continue
+            pass
+    
+    def show_competition_picker(self, entry_widget):
+        """Show a popover listbox to choose competition interest (stores id, shows text)."""
+        # Build toplevel near the entry
+        picker = tk.Toplevel(self)
+        picker.overrideredirect(True)
+        picker.lift()
+        picker.attributes('-topmost', True)
+
+        # Position below the entry
+        entry_widget.update_idletasks()
+        x = entry_widget.winfo_rootx()
+        y = entry_widget.winfo_rooty() + entry_widget.winfo_height()
+        picker.geometry(f"240x160+{x}+{y}")
+
+        lb = tk.Listbox(picker)
+        lb.pack(fill=tk.BOTH, expand=True)
+
+        # Populate listbox with full text
+        options = getattr(entry_widget, '_comp_options', [])
+        for comp_id, comp_text in options:
+            lb.insert(tk.END, f"{comp_id} - {comp_text}")
+
+        def on_select(event=None):
+            sel = lb.curselection()
+            if not sel:
+                picker.destroy()
+                return
+            value = lb.get(sel[0])
+            if ' - ' in value:
+                comp_id_str, comp_text = value.split(' - ', 1)
+                try:
+                    entry_widget._comp_id = int(comp_id_str)
+                except Exception:
+                    entry_widget._comp_id = None
+                entry_widget.delete(0, tk.END)
+                entry_widget.insert(0, comp_text)
+            picker.destroy()
+            self.on_field_change()
+
+        lb.bind('<Double-Button-1>', on_select)
+        lb.bind('<Return>', on_select)
+        lb.bind('<ButtonRelease-1>', on_select)
+
+        def on_click_out(event):
+            # Close if click outside
+            if not (picker.winfo_x() <= event.x_root <= picker.winfo_x() + picker.winfo_width() and
+                    picker.winfo_y() <= event.y_root <= picker.winfo_y() + picker.winfo_height()):
+                picker.destroy()
+
+        # Close on outside click
+        self.bind('<Button-1>', on_click_out, add='+')
+    
+    def on_field_change(self, event=None):
+        """Handle field changes - turn save button yellow only if values have actually changed"""
+        if self.save_button and hasattr(self, 'original_student_values') and self.original_student_values:
+            # Check if any field has changed from its original value
+            has_changes = False
+            
+            for field, widget in self.entry_widgets_existing_student.items():
+                if field in self.original_student_values:
+                    original_value = self.original_student_values[field]
+                    # Get current value from mapped widget types
+                    if isinstance(widget, tk.BooleanVar):
+                        current_value = 1 if widget.get() else 0
+                        original_int = 1 if (original_value == "1" or original_value == 1 or original_value == "True" or original_value is True) else 0
+                        if current_value != original_int:
+                            has_changes = True
+                            break
+                    elif isinstance(widget, ttk.Combobox):
+                        selection = widget.get()
+                        if field in ["TKD Comp Interest:", "KRT Comp Interest:"] and selection:
+                            current_value = selection.split(" - ")[0] if " - " in selection else selection
+                        else:
+                            current_value = selection
+                        if str(current_value) != str(original_value):
+                            has_changes = True
+                            break
+                    elif isinstance(widget, tk.Entry):
+                        current_value = widget.get()
+                        if str(current_value) != str(original_value):
+                            has_changes = True
+                            break
+                    elif isinstance(widget, tk.Frame):
+                        current_value = ""
+                        for child in widget.winfo_children():
+                            if isinstance(child, tk.Entry):
+                                current_value = child.get()
+                                break
+                        if str(current_value) != str(original_value):
+                            has_changes = True
+                            break
+            
+            # Only change button color if there are actual changes
+            if has_changes:
+                self.save_button.config(bg="yellow")
+            else:
+                self.save_button.config(bg="SystemButtonFace")
+    
     ## tab 3 ##
     def commit_testing_command(self):
         id_list = []
@@ -2181,19 +3137,32 @@ class MyApp(tk.Tk):
                 email_list.append(df.loc[0,'email2'])
                 email_list.append(df.loc[0,'email3'])
 
-            cleaned_email_list = "; ".join(list(set(list(filter(lambda x: x is not None, email_list)))))
-            print(cleaned_email_list)
+            # Remove duplicates and None values, convert to list
+            cleaned_email_list = list(set(filter(lambda x: x is not None, email_list)))
+            print(f"Email recipients: {cleaned_email_list}")
 
-            email_handler_google.create_email(
-                subject="PMA - ", 
+            # Use HTML email formatting like Draft to All
+            email_handler_google.create_html_email(
+                subject="Performance MA - ", 
                 email_from="saoneil@live.com",
                 emails_to=[],
                 emails_cc=[],
-                emails_bcc=email_list,
-                body=""
+                emails_bcc=cleaned_email_list,
+                body="""<p>Hello Students/Parents,</p>
+                
+                <p><br><br><br><br></p>
+                
+                <div style="color: #666666; font-size: 12px; margin-top: 20px;">
+                    <p style="margin: 5px 0; font-family: Arial, sans-serif;">
+                        ___________________<br>
+                        <strong>Sean O'Neil</strong><br>
+                        +1-902-452-7326<br>
+                        <a href="mailto:saoneil@live.com" style="color: #666666; text-decoration: none;">saoneil@live.com</a>
+                    </p>
+                </div>"""
                 )
 
-            messagebox.showinfo("Send Email", f"Email draft generated, check drafts folder.")
+            messagebox.showinfo("Send Email", f"Email draft generated for {len(cleaned_email_list)} recipients, check drafts folder.")
         else:
             messagebox.showwarning("No Selection", "Please select records to send email.")
     def toggle_trial_right_click(self):
@@ -2383,6 +3352,8 @@ class MyApp(tk.Tk):
             commit_new_student = tk.Button(self.top_left_frame_tab2, text="Commit New Student to DB", command=self.commit_changes_new_student_command)
             commit_new_student.grid(row=i + 1, column=1, columnspan=2)
             
+            # Remove previous horizontal separator; we'll use a vertical divider between frames
+            
             ## current student section
             existing_student_label = tk.Label(self.top_right_frame_tab2, text = "Modify Existing Student", font="verdana 15 bold")
             existing_student_label.grid(row=0, column=0, columnspan=6, sticky='w', pady=(30,15))
@@ -2390,66 +3361,327 @@ class MyApp(tk.Tk):
             existing_student_label = tk.Label(self.top_right_frame_tab2, text="Edit Existing Student:")
             existing_student_label.grid(row=1, column=1, sticky='e', pady=(0,30))
 
-            existing_student_dropdown = ttk.Combobox(self.top_right_frame_tab2, textvariable=self.existing_student_dropdown_value)
+            # Student entry with dynamic filtering
+            existing_student_entry = tk.Entry(self.top_right_frame_tab2, textvariable=self.existing_student_dropdown_value, width=33)
+            existing_student_entry.grid(row=1, column=2, pady=(0,30))
+            
+            # Create listbox for student selection (overlay style)
+            existing_student_listbox = tk.Listbox(self.top_right_frame_tab2, height=6, width=33)
+            existing_student_listbox.grid_remove()  # Hide initially
+            
+            # Store student data for filtering
+            self.existing_student_data = []
+            
+            # Load student data
             try:
-                existing_student_dropdown['values'] = self.all_students_list_command()
-            except:
-                existing_student_dropdown['values'] = ["DB Connection Failed"]
-            existing_student_dropdown.grid(row=1, column=2, pady=(0,30))
-            existing_student_dropdown.bind('<<ComboboxSelected>>', self.existing_student_selection_tab2_command)
+                students_df = db.get_all_students_for_dropdown()
+                # Store student data with ID for backend use
+                self.existing_student_data = [{'id': row['id'], 'name': row['name']} for _, row in students_df.iterrows()]
+                # Populate the listbox initially
+                for student in self.existing_student_data:
+                    existing_student_listbox.insert(tk.END, student['name'])
+                print(f"Loaded {len(self.existing_student_data)} students")  # Debug print
+            except Exception as e:
+                print(f"Error loading students: {e}")  # Debug print
+                existing_student_listbox.insert(tk.END, "DB Connection Failed")
+            
+            # Add filtering functionality to student entry
+            def filter_existing_students():
+                # Get the current text in the entry
+                typed_text = self.existing_student_dropdown_value.get().lower()
+                
+                # Clear the listbox
+                existing_student_listbox.delete(0, tk.END)
+                
+                # Filter students based on typed text
+                if typed_text:
+                    filtered_students = [student['name'] for student in self.existing_student_data 
+                                       if typed_text in student['name'].lower()]
+                else:
+                    filtered_students = [student['name'] for student in self.existing_student_data]
+                
+                # Add filtered students to listbox
+                for student_name in filtered_students:
+                    existing_student_listbox.insert(tk.END, student_name)
+                
+                # Show listbox if there are results
+                if filtered_students:
+                    # Position listbox below entry box using absolute positioning
+                    entry_x = existing_student_entry.winfo_x()
+                    entry_y = existing_student_entry.winfo_y()
+                    entry_height = existing_student_entry.winfo_height()
+                    
+                    existing_student_listbox.place(x=entry_x, y=entry_y + entry_height, width=existing_student_entry.winfo_width())
+                    existing_student_listbox.lift()  # Bring to front
+                    
+                    # Auto-select if only one match
+                    if len(filtered_students) == 1:
+                        existing_student_listbox.selection_set(0)
+                else:
+                    existing_student_listbox.place_forget()
+            
+            def on_existing_student_select(event=None):
+                # When a student is selected from listbox
+                selection = existing_student_listbox.curselection()
+                if selection:
+                    selected_name = existing_student_listbox.get(selection[0])
+                    print(f"Dropdown selection: {selected_name}")  # Debug print
+                    self.existing_student_dropdown_value.set(selected_name)
+                    existing_student_listbox.place_forget()
+                    # Return focus to entry box
+                    existing_student_entry.focus_set()
+                    # Trigger the existing selection command
+                    print("Calling existing_student_selection_tab2_command")  # Debug print
+                    self.existing_student_selection_tab2_command()
+            
+            def on_existing_student_click(event):
+                # Single-click selection - select immediately
+                on_existing_student_select()
+            
+            def on_existing_student_key_press(event):
+                # Handle keyboard navigation
+                if event.keysym == 'Return':
+                    on_existing_student_select()
+                    return "break"
+                elif event.keysym == 'Escape':
+                    existing_student_listbox.place_forget()
+                    existing_student_entry.focus_set()
+                    return "break"
+                elif event.keysym == 'Tab':
+                    # Auto-select if only one match
+                    if existing_student_listbox.size() == 1:
+                        on_existing_student_select()
+                        return "break"
+                    else:
+                        existing_student_listbox.place_forget()
+                        return
+                elif event.keysym in ['Up', 'Down']:
+                    # Ensure list is visible and populated
+                    if existing_student_listbox.size() == 0:
+                        filter_existing_students()
+                    else:
+                        # Move selection up/down
+                        size = existing_student_listbox.size()
+                        sel = existing_student_listbox.curselection()
+                        if sel:
+                            idx = sel[0]
+                        else:
+                            idx = -1
+                        if event.keysym == 'Down':
+                            new_idx = min(idx + 1, size - 1) if size > 0 else 0
+                        else:  # Up
+                            new_idx = max(idx - 1, 0) if size > 0 else 0
+                        existing_student_listbox.selection_clear(0, tk.END)
+                        if size > 0:
+                            existing_student_listbox.selection_set(new_idx)
+                            existing_student_listbox.see(new_idx)
+                    # Keep focus in entry and prevent cursor move
+                    return "break"
+                else:
+                    # Other keys (typing) are handled by entry/filtering
+                    return
+            
+            def on_existing_student_focus_in(event):
+                # Show all students when entry gets focus
+                filter_existing_students()
+            
+            def on_existing_student_focus_out(event):
+                # Only hide listbox if focus is not going to the listbox
+                if event.widget != existing_student_listbox:
+                    self.after(150, lambda: existing_student_listbox.place_forget())
+            
+            # Bind events
+            self.existing_student_dropdown_value.trace('w', lambda *args: filter_existing_students())
+            existing_student_entry.bind('<FocusIn>', on_existing_student_focus_in)
+            existing_student_entry.bind('<FocusOut>', on_existing_student_focus_out)
+            existing_student_entry.bind('<KeyPress>', on_existing_student_key_press)
+            existing_student_listbox.bind('<Button-1>', on_existing_student_click)
+            existing_student_listbox.bind('<Double-Button-1>', on_existing_student_select)
+            existing_student_listbox.bind('<Return>', on_existing_student_select)
+            existing_student_listbox.bind('<FocusOut>', lambda e: existing_student_entry.focus_set())
 
+            # Profile Comment field positioned to the right of the dropdown
+            profile_comment_label = tk.Label(self.top_right_frame_tab2, text="Profile Comment:")
+            profile_comment_label.grid(row=1, column=3, sticky='e', pady=(0,30), padx=(20,0))
+            
+            profile_comment_entry = tk.Entry(self.top_right_frame_tab2, width=25, justify='left')
+            profile_comment_entry.grid(row=1, column=4, pady=(0,30), padx=(0,10), columnspan=2, sticky='w')
+            
+            # Bind field change events for profile comment
+            profile_comment_entry.bind('<KeyRelease>', self.on_field_change)
+            profile_comment_entry.bind('<Button-1>', self.on_field_change)
+            profile_comment_entry.bind('<FocusOut>', self.on_field_change)
+            
+            self.entry_widgets_existing_student["Profile Comment:"] = profile_comment_entry
 
             current_student_label_info = [
+            # Column 1: Basic student info, contact, payment, personal details
             ("First Name:", 2, 1),
             ("Last Name:", 3, 1),
-            ("DOB (yyyy-mm-dd):", 4, 1),
-            ("DOB-approx:", 5, 1),
-            ("Start Date (yyyy-mm-dd):", 6, 1),
-            ("Active:", 7, 1),
-            ("Trial Student:", 8, 1),
-            ("Wait List:", 9, 1),
-            ("Current Rank:", 10, 1),
-            ("Does Karate:", 11, 1),
-            ("Local Comp Interest:", 12, 1),
-            ("Nat Comp Interest:", 13, 1),
-            ("Intl Comp Interest:", 14, 1),
-            ("Karate Prov Team:", 15, 1),
-            ("Signed Waiver:", 16, 1),
-            ("Profile Comment:", 17, 1),
+            ("Email 1:", 4, 1),
+            ("Email 2:", 5, 1),
+            ("Email 3:", 6, 1),
+            ("Phone 1:", 7, 1),
+            ("Phone 2:", 8, 1),
+            ("Phone 3:", 9, 1),
+            ("Payment Good Till:", 10, 1),
+            ("Pay Rate:", 11, 1),
+            ("Start Date (yyyy-mm-dd):", 12, 1),
+            ("Gender:", 13, 1),
+            ("DOB (yyyy-mm-dd):", 14, 1),
+            ("DOB-approx:", 15, 1),
+            ("Active:", 16, 1),
+            ("Trial Student:", 17, 1),
+            ("Wait List:", 18, 1),
+            ("Does Karate:", 19, 1),
 
-            ("Email 1:", 2, 3),
-            ("Email 2:", 3, 3),
-            ("Email 3:", 4, 3),
-            ("Phone 1:", 5, 3),
-            ("Phone 2:", 6, 3),
-            ("Phone 3:", 7, 3),
+            # Column 2: Rank and test dates
+            ("Current Rank:", 2, 3),
+            ("YS Test Date:", 3, 3),
+            ("YB Test Date:", 4, 3),
+            ("GS Test Date:", 5, 3),
+            ("GB Test Date:", 6, 3),
+            ("BS Test Date:", 7, 3),
+            ("BB Test Date:", 8, 3),
+            ("RS Test Date:", 9, 3),
+            ("RB Test Date:", 10, 3),
+            ("BKS Test Date:", 11, 3),
+            ("1st Dan Test Date:", 12, 3),
+            ("2nd Dan Test Date:", 13, 3),
+            ("3rd Dan Test Date:", 14, 3),
+            ("4th Dan Test Date:", 15, 3),
+            ("5th Dan Test Date:", 16, 3),
+            ("6th Dan Test Date:", 17, 3),
+            ("7th Dan Test Date:", 18, 3),
+            ("8th Dan Test Date:", 19, 3),
+            ("9th Dan Test Date:", 20, 3),
 
-            ("YS Test Date:", 2, 5),
-            ("YB Test Date:", 3, 5),
-            ("GS Test Date:", 4, 5),
-            ("GB Test Date:", 5, 5),
-            ("BS Test Date:", 6, 5),
-            ("BB Test Date:", 7, 5),
-            ("RS Test Date:", 8, 5),
-            ("RB Test Date:", 9, 5),
-            ("BKS Test Date:", 10, 5),
-            ("1st Dan Test Date:", 11, 5)
+            # Column 3: Black belt info, competition, membership, timestamps
+            ("Black Belt Intl ID:", 2, 5),
+            ("Black Belt Number:", 3, 5),
+            ("TKD Comp Interest:", 4, 5),
+            ("KRT Comp Interest:", 5, 5),
+            ("Signed Waiver:", 6, 5),
+            ("Aurora Member:", 7, 5),
+            ("Record Creation:", 8, 5),
+            ("Record Update:", 9, 5)
             ]
             for (text, row, col) in current_student_label_info:
                 label = tk.Label(self.top_right_frame_tab2, text=text)
                 label.grid(row=row, column=col, sticky='e', pady=(0,5))
 
-                if text == "Profile Comment:":
-                    entry = tk.Entry(self.top_right_frame_tab2, width=90)
-                    entry.grid(row=row, column=col+1, padx=(0, 10), columnspan=6)
+                # Check if this is a date field
+                date_fields = ["DOB (yyyy-mm-dd):", "Start Date (yyyy-mm-dd):", "Payment Good Till:", 
+                             "YS Test Date:", "YB Test Date:", "GS Test Date:", "GB Test Date:", 
+                             "BS Test Date:", "BB Test Date:", "RS Test Date:", "RB Test Date:", 
+                             "BKS Test Date:", "1st Dan Test Date:", "2nd Dan Test Date:", 
+                             "3rd Dan Test Date:", "4th Dan Test Date:", "5th Dan Test Date:", 
+                             "6th Dan Test Date:", "7th Dan Test Date:", "8th Dan Test Date:", 
+                             "9th Dan Test Date:"]
+                
+                # Check if this is a boolean field (checkbox)
+                boolean_fields = ["DOB-approx:", "Active:", "Trial Student:", "Wait List:", 
+                                "Does Karate:", "Signed Waiver:", "Aurora Member:"]
+                # Email fields (wider width)
+                email_fields = ["Email 1:", "Email 2:", "Email 3:"]
+                # Name fields (wider width)
+                name_fields = ["First Name:", "Last Name:"]
+                
+                if text in date_fields:
+                    # Create frame for entry and calendar button
+                    date_frame = tk.Frame(self.top_right_frame_tab2)
+                    date_frame.grid(row=row, column=col+1, padx=(0, 10), sticky='w')
+                    
+                    entry = tk.Entry(date_frame, width=15, justify='left')
+                    entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+                    
+                    # Calendar button
+                    calendar_button = tk.Button(date_frame, text="📅", width=3, 
+                                              command=lambda e=entry: self.show_calendar_dialog(e))
+                    calendar_button.pack(side=tk.RIGHT, padx=(5, 0))
+                    
+                    # Bind field change events for date fields
+                    entry.bind('<KeyRelease>', self.on_field_change)
+                    entry.bind('<Button-1>', self.on_field_change)
+                    entry.bind('<FocusOut>', self.on_field_change)
+                    
+                    self.entry_widgets_existing_student[text] = entry
+                    
+                elif text in boolean_fields:
+                    # Create checkbox for boolean fields using ttk.Checkbutton with variable
+                    var = tk.BooleanVar()
+                    checkbox = ttk.Checkbutton(self.top_right_frame_tab2, variable=var, command=self.on_field_change)
+                    checkbox.grid(row=row, column=col+1, padx=(0, 10), sticky='w')
+                    # Store the variable for later use
+                    self.entry_widgets_existing_student[text] = var
+                elif text in email_fields:
+                    # Create wider entries for email fields (double width)
+                    entry = tk.Entry(self.top_right_frame_tab2, width=30, justify='left')
+                    entry.grid(row=row, column=col+1, padx=(0, 10), sticky='w')
+
+                    # Bind field change events for email fields
+                    entry.bind('<KeyRelease>', self.on_field_change)
+                    entry.bind('<Button-1>', self.on_field_change)
+                    entry.bind('<FocusOut>', self.on_field_change)
+
+                    self.entry_widgets_existing_student[text] = entry
+                elif text in name_fields:
+                    # Create wider entries for name fields (double width)
+                    entry = tk.Entry(self.top_right_frame_tab2, width=30, justify='left')
+                    entry.grid(row=row, column=col+1, padx=(0, 10), sticky='w')
+
+                    # Bind field change events for name fields
+                    entry.bind('<KeyRelease>', self.on_field_change)
+                    entry.bind('<Button-1>', self.on_field_change)
+                    entry.bind('<FocusOut>', self.on_field_change)
+
+                    self.entry_widgets_existing_student[text] = entry
+                elif text in ["TKD Comp Interest:", "KRT Comp Interest:"]:
+                    # Create a picker: Entry + button that opens a list of options
+                    picker_frame = tk.Frame(self.top_right_frame_tab2)
+                    picker_frame.grid(row=row, column=col+1, padx=(0, 10), sticky='w')
+
+                    entry = tk.Entry(picker_frame, width=15, justify='left')
+                    entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+                    # Load options from DB and store on entry
+                    options = []
+                    try:
+                        if text == "TKD Comp Interest:":
+                            df_levels = db.get_tkd_competition_levels()
+                        else:
+                            df_levels = db.get_krt_competition_levels()
+                        options = [(int(row['id']), str(row['competition_level'])) for _, row in df_levels.iterrows()]
+                    except Exception:
+                        options = [(1, "Beginner"), (2, "Intermediate"), (3, "Advanced")]
+                    entry._comp_options = options  # store as attribute
+                    entry._comp_id = None          # selected id
+
+                    btn = tk.Button(picker_frame, text="▼", width=2, command=lambda e=entry: self.show_competition_picker(e))
+                    btn.pack(side=tk.RIGHT, padx=(5, 0))
+
+                    # Bind field change events for picker
+                    entry.bind('<KeyRelease>', self.on_field_change)
+                    entry.bind('<Button-1>', self.on_field_change)
+                    entry.bind('<FocusOut>', self.on_field_change)
+
+                    # Store the frame (consistent with date fields) for lookup
+                    self.entry_widgets_existing_student[text] = picker_frame
+                    
                 else:
-                    entry = tk.Entry(self.top_right_frame_tab2)
-                    entry.grid(row=row, column=col+1, padx=(0, 10))
+                    entry = tk.Entry(self.top_right_frame_tab2, width=15, justify='left')
+                    entry.grid(row=row, column=col+1, padx=(0, 10), sticky='w')
 
-                self.entry_widgets_existing_student[text] = entry
+                    # Bind field change events for regular fields
+                    entry.bind('<KeyRelease>', self.on_field_change)
+                    entry.bind('<Button-1>', self.on_field_change)
+                    entry.bind('<FocusOut>', self.on_field_change)
 
-            button_existing = tk.Button(self.top_right_frame_tab2, text="Commit Changes to DB for Existing Student", command=self.commit_changes_existing_student_command)
-            button_existing.grid(row=18, column=1, columnspan=6, sticky='n')
+                    # Store mapping for regular entry fields
+                    self.entry_widgets_existing_student[text] = entry
+
+            self.save_button = tk.Button(self.top_right_frame_tab2, text="Save Changes", command=self.commit_changes_existing_student_command)
+            self.save_button.grid(row=25, column=1, columnspan=6, sticky='n', pady=(40, 0))
         def tab3(self):
             testing_update_label = tk.Label(self.top_left_frame_tab3, text="Log Testing Results", font="verdana 15 bold")
             testing_update_label.grid(row=1, column=1, columnspan=2, sticky='w', pady=(15,15), padx=(10,10))
