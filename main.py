@@ -2148,6 +2148,12 @@ class MyApp(tk.Tk):
         self.current_transactions_df = df
         # Set flag to enable context menu for transactions
         self.current_equipment_view = 'transactions'
+    def view_unit_costs_equipment(self):
+        df = db.sp_club_equipment_view_costs()
+        print(df)
+        self.refresh_datagrid_equipment(self.my_tree_equipment, df, self.right_frame_tab5)
+        # Clear context menu flag for non-transaction views
+        self.current_equipment_view = None
     def received_and_paid_dialog(self):
         # Create dialog window
         dialog = tk.Toplevel(self)
@@ -3559,29 +3565,29 @@ class MyApp(tk.Tk):
             
             # Use different character width and padding for different column types
             if is_id_column:
-                char_width = 6  # More compact for ID columns
-                padding = 10    # Less padding for ID columns
-                min_width = 40  # Smaller minimum for ID columns
+                char_width = 5  # Tighter for ID columns
+                padding = 6     # Tighter padding for ID columns
+                min_width = 36  # Smaller minimum for ID columns
             elif is_name_column:
-                char_width = 6  # More compact for name columns
-                padding = 12    # Less padding for name columns
-                min_width = 50  # Smaller minimum for name columns
+                char_width = 5  # Tighter for name columns
+                padding = 8     # Tighter padding for name columns
+                min_width = 44  # Smaller minimum for name columns
             elif is_pay_rate_column:
-                char_width = 6  # More compact for pay_rate columns
-                padding = 10    # Less padding for pay_rate columns
-                min_width = 45  # Smaller minimum for pay_rate columns
+                char_width = 5  # Tighter for pay_rate columns
+                padding = 6     # Tighter padding for pay_rate columns
+                min_width = 40  # Smaller minimum for pay_rate columns
             elif is_payment_good_till_column:
-                char_width = 6  # More compact for payment_good_till columns
-                padding = 10    # Less padding for payment_good_till columns
-                min_width = 45  # Smaller minimum for payment_good_till columns
+                char_width = 5  # Tighter for payment_good_till columns
+                padding = 6     # Tighter padding for payment_good_till columns
+                min_width = 40  # Smaller minimum for payment_good_till columns
             elif is_profile_comment_column:
-                char_width = 6  # More compact for profile_comment columns
-                padding = 10    # Less padding for profile_comment columns
-                min_width = 45  # Smaller minimum for profile_comment columns
+                char_width = 5  # Tighter for profile_comment columns
+                padding = 6     # Tighter padding for profile_comment columns
+                min_width = 40  # Smaller minimum for profile_comment columns
             else:
-                char_width = 8  # Standard character width
-                padding = 20    # Standard padding
-                min_width = 50  # Standard minimum width
+                char_width = 6  # Tighter standard character width
+                padding = 10    # Tighter standard padding
+                min_width = 40  # Smaller standard minimum width
             
             # Check header width
             header_width = len(str(column)) * char_width
@@ -4471,7 +4477,8 @@ class MyApp(tk.Tk):
             equipment_section = [
                 ("Equipment List:", "Equipment", self.view_equipment_list_equipment, 9, 'ne', (0,3)),
                 ("Stock Quantities:", "Stock", self.view_stock_quantities_equipment, 10, 'ne', (0,3)),
-                ("Transactions:", "Transactions", self.view_transactions_equipment, 11, 'ne', (0,3))
+                ("Transactions:", "Transactions", self.view_transactions_equipment, 11, 'ne', (0,3)),
+                ("Unit Costs:", "Unit Costs", self.view_unit_costs_equipment, 12, 'ne', (0,3))
             ]
             for label_text, button_text, command, row, sticky, pady in equipment_section:
                 label = tk.Label(self.left_frame_tab5, text=label_text)

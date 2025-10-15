@@ -582,6 +582,12 @@ def sp_club_equipment_data_v2():
     df = get_dataframe(connection=cn, sql=query)
     return df
 
+def sp_club_equipment_view_costs():
+    query = "call sp_club_equipment_view_costs;"
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+
 def get_tkd_competition_levels():
     query = "select id, competition_level from tkd_competition_interest;"
     cn = get_connection(sql_db = schema)
