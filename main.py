@@ -8,7 +8,7 @@ import db, email_handler_google
 from tkinter import font
 
 
-window_width = 1275
+window_width = 1300
 window_height = 775
 
 class MyApp(tk.Tk):
@@ -39,6 +39,7 @@ class MyApp(tk.Tk):
         self.right_click_menu.add_command(label="Toggle 'Active Student'", command=self.toggle_active_right_click)
         self.right_click_menu.add_command(label="Toggle 'Wait List'", command=self.toggle_waitlist_right_click)
         self.right_click_menu.add_command(label="Add Profile Comment", command=self.profile_comment_right_click)
+        self.right_click_menu.add_command(label="Toggle 'Karate'", command=self.toggle_karate_right_click)
         self.tab_frames = []
         self.entry_widgets_search_tab1 = {}
         self.entry_widgets_search_equipment = {}
@@ -88,6 +89,16 @@ class MyApp(tk.Tk):
     def view_all_students_command(self):
         df = db.sp_all_active_students()
         print(df)
+        self.refresh_datagrid(self.my_tree, df, self.right_frame_tab1)
+    def view_karate_students_command(self):
+        df = db.sp_all_active_karate_students()
+        print(df)
+        self.refresh_datagrid(self.my_tree, df, self.right_frame_tab1)
+    def view_competition_data_command(self):
+        df = db.sp_competition_data()
+        print(df)
+        # Store for export
+        self.current_competition_df = df
         self.refresh_datagrid(self.my_tree, df, self.right_frame_tab1)
     def view_trial_students_command(self):
         df = db.sp_all_trial_students()
@@ -3753,6 +3764,21 @@ class MyApp(tk.Tk):
             messagebox.showinfo("Toggle Active", "Toggled 'Wait List' field for StudentID = " + str(student_id_list))
         else:
             messagebox.showwarning("No Selection", "Please select records to toggle waitlist.")
+    def toggle_karate_right_click(self):
+        student_id_list = []
+        selected_items = self.my_tree.selection()
+        if selected_items:
+            records_data = [self.my_tree.item(item, 'values') for item in selected_items]
+            for record in records_data:
+                student_id_list.append(record[0])
+
+            for id in student_id_list:
+                print(id + " - toggle does_karate value")
+                db.sp_toggle_trial_or_active(id, 'does_karate')
+
+            messagebox.showinfo("Toggle Karate", "Toggled 'does_karate' field for StudentID = " + str(student_id_list))
+        else:
+            messagebox.showwarning("No Selection", "Please select records to toggle karate flag.")
     def profile_comment_right_click(self):
         student_id_list = []
         selected_items = self.my_tree.selection()
@@ -3769,6 +3795,16 @@ class MyApp(tk.Tk):
             messagebox.showinfo("Add Comment", f"Comment: {profile_comment}" + '\n' + "Added for StudentID = " + str(student_id_list))
         else:
             messagebox.showwarning("No Selection", "Please select records to add comment to profile.")
+    def export_competition_data(self):
+        try:
+            if hasattr(self, 'current_competition_df') and self.current_competition_df is not None and not self.current_competition_df.empty:
+                output_path = r"C:\\Users\\saone\\Desktop\\comp_data.csv"
+                self.current_competition_df.to_csv(output_path, index=False)
+                messagebox.showinfo("Export", f"Competition data exported to: {output_path}")
+            else:
+                messagebox.showwarning("Export", "No competition data to export. Click 'Comp' first.")
+        except Exception as e:
+            messagebox.showerror("Export Error", str(e))
     def populate_treeview(self, treeview:ttk.Treeview, dataframe:pd.DataFrame):
         treeview.delete(*treeview.get_children())
 
@@ -3805,6 +3841,26 @@ class MyApp(tk.Tk):
                 if button_text:
                     button = tk.Button(self.left_frame_tab1, text=button_text, command=command)
                     button.grid(row=row, column=2, sticky='nw', pady=pady)
+                    if label_text == "View All Students:":
+                        # Add Karate Students button to the right of All Students (smaller and closer)
+                        button_karate = tk.Button(
+                            self.left_frame_tab1,
+                            text="Karate",
+                            command=self.view_karate_students_command
+                        )
+                        button_karate.grid(row=row, column=3, sticky='nw', pady=pady, padx=(2,0))
+                        # Add Comp button to the right of Karate
+                        button_comp = tk.Button(
+                            self.left_frame_tab1,
+                            text="Comp",
+                            command=self.view_competition_data_command,
+                            padx=0
+                        )
+                        button_comp.grid(row=row, column=4, sticky='nw', pady=pady, padx=(2,0))
+                        # Bind right-click to export competition data
+                        def _export_competition_data_event(event, self=self):
+                            self.export_competition_data()
+                        button_comp.bind('<Button-3>', _export_competition_data_event)
                 else:
                     entry = tk.Entry(self.left_frame_tab1, width=10)
                     entry.grid(row=row, column=2, sticky='nw', pady=pady)

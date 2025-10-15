@@ -12,6 +12,18 @@ def sp_all_active_students():
     df = get_dataframe(connection=cn, sql=query)
 
     return df
+def sp_all_active_karate_students():
+    query = (
+        "select\n"
+        "concat(first_name, \" \", last_name) as `name`,\n"
+        "concat(ifnull(email1, \"\"), \", \", ifnull(email2, \"\"), \", \", ifnull(email3, \"\")) as `emails`,\n"
+        "krt_competition_interest_level\n"
+        "from students where active = 1 and does_karate = 1;"
+    )
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+
+    return df
 def sp_all_trial_students():
     query = "call sp_all_trial_students;"
     cn = get_connection(sql_db = schema)
@@ -584,6 +596,12 @@ def sp_club_equipment_data_v2():
 
 def sp_club_equipment_view_costs():
     query = "call sp_club_equipment_view_costs;"
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+
+def sp_competition_data():
+    query = "call sp_competition_data;"
     cn = get_connection(sql_db = schema)
     df = get_dataframe(connection=cn, sql=query)
     return df
