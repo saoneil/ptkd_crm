@@ -600,6 +600,32 @@ def sp_club_equipment_view_costs():
     df = get_dataframe(connection=cn, sql=query)
     return df
 
+def insert_stock_order(order_rows, fx_rate):
+    """Insert stock order rows into club_equipment_stock_orders table.
+
+    order_rows: list of tuples (item_id:int, qty:int, cost_per_usd:float)
+    fx_rate: float CAD per USD
+    """
+    cn = get_connection(sql_db = schema)
+    fx_sql = float(fx_rate) if fx_rate is not None else 0.0
+    
+    try:
+        # Insert each row directly into club_equipment_stock_orders
+        for item_id, qty, cost_per_usd in order_rows:
+            item_id_sql = int(item_id)
+            qty_sql = int(qty)
+            cpu_sql = float(cost_per_usd)
+            cost_per_cad_sql = cpu_sql * fx_sql
+            
+            insert_sql = (
+                "insert into club_equipment_stock_orders "
+                "(order_date, item_id, quantity, cost_per_usd, cost_per_cad) "
+                f"values (now(), {item_id_sql}, {qty_sql}, {cpu_sql}, {cost_per_cad_sql});"
+            )
+            execute_sql(connection=cn, sql=insert_sql)
+    finally:
+        cn.close()
+
 def sp_competition_data():
     query = "call sp_competition_data;"
     cn = get_connection(sql_db = schema)

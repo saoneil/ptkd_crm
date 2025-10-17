@@ -2165,6 +2165,189 @@ class MyApp(tk.Tk):
         self.refresh_datagrid_equipment(self.my_tree_equipment, df, self.right_frame_tab5)
         # Clear context menu flag for non-transaction views
         self.current_equipment_view = None
+    def stock_order_dialog(self):
+        dialog = tk.Toplevel(self)
+        dialog.title("Stock Order")
+        dialog.geometry("820x480")
+        dialog.resizable(False, False)
+
+        dialog.transient(self)
+        dialog.grab_set()
+
+        main_frame = tk.Frame(dialog)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=16, pady=16)
+
+        # FX rate row
+        fx_label = tk.Label(main_frame, text="CAD/USD FX Rate:")
+        fx_label.grid(row=0, column=0, sticky='w', pady=(0, 10))
+        fx_var = tk.StringVar(value="1.35")
+        fx_entry = tk.Entry(main_frame, textvariable=fx_var, width=20)
+        fx_entry.grid(row=0, column=1, sticky='w', pady=(0, 10))
+        def parse_float(value):
+            try:
+                return float(str(value).strip())
+            except Exception:
+                return 0.0
+        def calc_all_rows_and_totals():
+            fx = parse_float(fx_var.get())
+            total_usd = 0.0
+            total_cad = 0.0
+            for row_idx in range(10):
+                try:
+                    qty = int(row_vars[row_idx]['qty'].get() or 0)
+                except Exception:
+                    qty = 0
+                cpp_usd = parse_float(row_vars[row_idx]['cost_per_usd'].get())
+                cost_usd_val = qty * cpp_usd
+                row_vars[row_idx]['cost_usd_var'].set(f"{cost_usd_val:.2f}")
+                cpp_cad_val = cpp_usd * fx
+                row_vars[row_idx]['cost_per_cad_var'].set(f"{cpp_cad_val:.4f}")
+                cost_cad_val = qty * cpp_cad_val
+                row_vars[row_idx]['cost_cad_var'].set(f"{cost_cad_val:.2f}")
+                total_usd += cost_usd_val
+                total_cad += cost_cad_val
+            total_usd_var.set(f"{total_usd:.2f}")
+            total_cad_var.set(f"{total_cad:.2f}")
+
+        # Headers
+        headers = [
+            "Item (id - description)",
+            "Qty",
+            "Cost/Unit USD",
+            "Cost USD",
+            "Cost/Unit CAD",
+            "Cost CAD",
+        ]
+        for col, text in enumerate(headers):
+            tk.Label(main_frame, text=text, font=('verdana', 9, 'bold')).grid(row=1, column=col, sticky='w', padx=(0,6))
+
+        # Load equipment items for dropdown
+        try:
+            equipment_df = db.get_all_equipment_for_dropdown()
+            items_list = [f"{int(row['id'])} - {row['item_description']}" for _, row in equipment_df.iterrows()]
+        except Exception as e:
+            tk.messagebox.showerror("Error", f"Failed to load equipment list: {str(e)}")
+            dialog.destroy()
+            return
+
+        row_vars = []
+        # Build 10 rows
+        for i in range(10):
+            base_row = 2 + i
+            # Item combobox
+            item_var = tk.StringVar()
+            item_combo = ttk.Combobox(main_frame, textvariable=item_var, values=items_list, state="readonly", width=34)
+            item_combo.grid(row=base_row, column=0, sticky='w', pady=(4,2))
+
+            # Qty entry
+            qty_var = tk.StringVar()
+            qty_entry = tk.Entry(main_frame, textvariable=qty_var, width=6)
+            qty_entry.grid(row=base_row, column=1, sticky='w', padx=(6,0))
+
+            # Cost per USD entry
+            cpp_usd_var = tk.StringVar()
+            cpp_usd_entry = tk.Entry(main_frame, textvariable=cpp_usd_var, width=12)
+            cpp_usd_entry.grid(row=base_row, column=2, sticky='w', padx=(6,0))
+
+            # Calculated readonly fields
+            cost_usd_var = tk.StringVar(value="0.00")
+            cost_usd_entry = tk.Entry(main_frame, textvariable=cost_usd_var, state='readonly', width=12)
+            cost_usd_entry.grid(row=base_row, column=3, sticky='w', padx=(6,0))
+
+            cost_per_cad_var = tk.StringVar(value="0.0000")
+            cost_per_cad_entry = tk.Entry(main_frame, textvariable=cost_per_cad_var, state='readonly', width=12)
+            cost_per_cad_entry.grid(row=base_row, column=4, sticky='w', padx=(6,0))
+
+            cost_cad_var = tk.StringVar(value="0.00")
+            cost_cad_entry = tk.Entry(main_frame, textvariable=cost_cad_var, state='readonly', width=12)
+            cost_cad_entry.grid(row=base_row, column=5, sticky='w', padx=(6,0))
+
+            def on_recalc(event=None, idx=i):
+                try:
+                    qty_val = int(row_vars[idx]['qty'].get() or 0)
+                except Exception:
+                    qty_val = 0
+                cpp_usd_val = parse_float(row_vars[idx]['cost_per_usd'].get())
+                fx_val = parse_float(fx_var.get())
+                cost_usd_val = qty_val * cpp_usd_val
+                row_vars[idx]['cost_usd_var'].set(f"{cost_usd_val:.2f}")
+                cpp_cad_val = cpp_usd_val * fx_val
+                row_vars[idx]['cost_per_cad_var'].set(f"{cpp_cad_val:.4f}")
+                cost_cad_val = qty_val * cpp_cad_val
+                row_vars[idx]['cost_cad_var'].set(f"{cost_cad_val:.2f}")
+                # Update totals after each field change
+                total_usd = 0.0
+                total_cad = 0.0
+                for r in row_vars:
+                    total_usd += parse_float(r['cost_usd_var'].get())
+                    total_cad += parse_float(r['cost_cad_var'].get())
+                total_usd_var.set(f"{total_usd:.2f}")
+                total_cad_var.set(f"{total_cad:.2f}")
+
+            qty_entry.bind('<KeyRelease>', on_recalc)
+            cpp_usd_entry.bind('<KeyRelease>', on_recalc)
+            fx_entry.bind('<KeyRelease>', lambda e: calc_all_rows_and_totals())
+
+            row_vars.append({
+                'item': item_var,
+                'qty': qty_var,
+                'cost_per_usd': cpp_usd_var,
+                'cost_usd_var': cost_usd_var,
+                'cost_per_cad_var': cost_per_cad_var,
+                'cost_cad_var': cost_cad_var,
+            })
+
+        # Totals row
+        totals_row = 13
+        tk.Label(main_frame, text="Totals:", font=('verdana', 9, 'bold')).grid(row=totals_row, column=2, sticky='e', padx=(0,6))
+        total_usd_var = tk.StringVar(value="0.00")
+        total_usd_entry = tk.Entry(main_frame, textvariable=total_usd_var, state='readonly', width=12)
+        total_usd_entry.grid(row=totals_row, column=3, sticky='w')
+        tk.Label(main_frame, text=" ").grid(row=totals_row, column=4)  # spacer
+        total_cad_var = tk.StringVar(value="0.00")
+        total_cad_entry = tk.Entry(main_frame, textvariable=total_cad_var, state='readonly', width=12)
+        total_cad_entry.grid(row=totals_row, column=5, sticky='w')
+
+        # Submit row
+        btn_frame = tk.Frame(main_frame)
+        btn_frame.grid(row=14, column=0, columnspan=6, pady=(16,0), sticky='w')
+
+        def add_order_to_db():
+            # Gather non-empty rows
+            order_rows = []
+            for r in row_vars:
+                item_text = (r['item'].get() or '').strip()
+                qty_text = (r['qty'].get() or '').strip()
+                cpp_usd_text = (r['cost_per_usd'].get() or '').strip()
+                if item_text == '' or qty_text == '' or cpp_usd_text == '':
+                    continue
+                try:
+                    item_id = int(item_text.split(' - ')[0])
+                except Exception:
+                    continue
+                try:
+                    qty_val = int(qty_text)
+                except Exception:
+                    qty_val = 0
+                cpp_usd_val = parse_float(cpp_usd_text)
+                if qty_val <= 0 or cpp_usd_val <= 0:
+                    continue
+                order_rows.append((item_id, qty_val, cpp_usd_val))
+
+            if len(order_rows) == 0:
+                tk.messagebox.showerror("Validation Error", "Enter at least one valid row.")
+                return
+
+            fx_val = parse_float(fx_var.get())
+            try:
+                db.insert_stock_order(order_rows, fx_val)
+                tk.messagebox.showinfo("Success", "Stock order saved.")
+                dialog.destroy()
+            except Exception as ex:
+                tk.messagebox.showerror("Database Error", f"Failed to save stock order: {ex}")
+
+        submit_btn = tk.Button(btn_frame, text="Add Order to DB", command=add_order_to_db, width=18)
+        submit_btn.pack(side=tk.LEFT)
     def received_and_paid_dialog(self):
         # Create dialog window
         dialog = tk.Toplevel(self)
@@ -4534,7 +4717,8 @@ class MyApp(tk.Tk):
                 ("Equipment List:", "Equipment", self.view_equipment_list_equipment, 9, 'ne', (0,3)),
                 ("Stock Quantities:", "Stock", self.view_stock_quantities_equipment, 10, 'ne', (0,3)),
                 ("Transactions:", "Transactions", self.view_transactions_equipment, 11, 'ne', (0,3)),
-                ("Unit Costs:", "Unit Costs", self.view_unit_costs_equipment, 12, 'ne', (0,3))
+                ("Unit Costs:", "Unit Costs", self.view_unit_costs_equipment, 12, 'ne', (0,3)),
+                ("Stock Order:", "Stock Order", self.stock_order_dialog, 13, 'ne', (0,3))
             ]
             for label_text, button_text, command, row, sticky, pady in equipment_section:
                 label = tk.Label(self.left_frame_tab5, text=label_text)
@@ -4545,7 +4729,7 @@ class MyApp(tk.Tk):
 
             # Add visual spacer between sections
             spacer_label = tk.Label(self.left_frame_tab5, text="", height=2)
-            spacer_label.grid(row=13, column=1, columnspan=2, pady=(10, 10))
+            spacer_label.grid(row=14, column=1, columnspan=2, pady=(10, 10))
 
             # Payment status section with more spacing
             payment_section = [
