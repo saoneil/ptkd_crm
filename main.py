@@ -4651,7 +4651,7 @@ class MyApp(tk.Tk):
                                     return
                                 ent._dialog_in_progress = True
                                 try:
-                                    path = filedialog.askopenfilename()
+                                    path = filedialog.askopenfilename(initialdir=r"C:\Users\saone\Documents\PMA\expenses")
                                     if path:
                                         ent.delete(0, 'end')
                                         ent.insert(0, path)
