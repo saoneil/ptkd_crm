@@ -12,9 +12,16 @@ def sp_all_active_students():
     df = get_dataframe(connection=cn, sql=query)
 
     return df
+def sp_all_inactive_students():
+    query = "call sp_all_inactive_students;"
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+
+    return df
 def sp_all_active_karate_students():
     query = (
         "select\n"
+        "id,\n"
         "concat(first_name, \" \", last_name) as `name`,\n"
         "concat(ifnull(email1, \"\"), \", \", ifnull(email2, \"\"), \", \", ifnull(email3, \"\")) as `emails`,\n"
         "krt_competition_interest_level\n"
@@ -249,6 +256,260 @@ def sp_all_income():
     df = get_dataframe(connection=cn, sql=query)
 
     return df
+def get_income_by_date_range(start_date, end_date):
+    query = f"""
+    select 
+        *
+    from income i
+    where 1=1
+    and date_of_transaction >= "{start_date}"
+    and date_of_transaction <= "{end_date}"
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+def get_income_by_date_range_and_club(start_date, end_date, club_reference):
+    query = f"""
+    select 
+        *
+    from income i
+    where 1=1
+    and date_of_transaction >= "{start_date}"
+    and date_of_transaction <= "{end_date}"
+    and club_reference = "{club_reference}"
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+def get_income_summary_by_date_range(start_date, end_date):
+    query = f"""
+    select 
+        "Grand Total" as `Type`,
+        sum(grand_total) as `Tot`
+    from income i
+    where 1=1
+    and date_of_transaction >= "{start_date}"
+    and date_of_transaction <= "{end_date}"
+    union all
+    select
+        "TKD Total" as `Type`,
+        sum(grand_total) as `Tot`
+    from income i
+    where 1=1
+    and date_of_transaction >= "{start_date}"
+    and date_of_transaction <= "{end_date}"
+    and club_reference = "Performance Taekwon-Do"
+    union all
+    select
+        "KRT Total" as `Type`,
+        sum(grand_total) as `Tot`
+    from income i
+    where 1=1
+    and date_of_transaction >= "{start_date}"
+    and date_of_transaction <= "{end_date}"
+    and club_reference = "Performance Karate"
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+def get_expense_by_date_range(start_date, end_date):
+    query = f"""
+    select
+        *
+    from expense e
+    where 1=1
+    and date_of_transaction >= "{start_date}"
+    and date_of_transaction <= "{end_date}"
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+def get_expense_by_date_range_and_club(start_date, end_date, club_reference):
+    query = f"""
+    select
+        *
+    from expense e
+    where 1=1
+    and date_of_transaction >= "{start_date}"
+    and date_of_transaction <= "{end_date}"
+    and club_reference = "{club_reference}"
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+def get_expense_summary_by_date_range(start_date, end_date):
+    query = f"""
+    select
+        "Grand Total" as `Type`,
+        sum(grand_total) as `Tot`
+    from expense e
+    where 1=1
+    and date_of_transaction >= "{start_date}"
+    and date_of_transaction <= "{end_date}"
+    union all
+    select
+        "TKD Total" as `Type`,
+        sum(grand_total) as `Tot`
+    from expense e
+    where 1=1
+    and date_of_transaction >= "{start_date}"
+    and date_of_transaction <= "{end_date}"
+    and club_reference = "PTKD"
+    union all
+    select
+        "KRT Total" as `Type`,
+        sum(grand_total) as `Tot`
+    from expense e
+    where 1=1
+    and date_of_transaction >= "{start_date}"
+    and date_of_transaction <= "{end_date}"
+    and club_reference = "PKRT"
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+def get_uncategorized_expenses():
+    query = """
+    select * from expense
+    where tax_category is null
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+def get_all_teaching_hours_taxes(start_date, end_date):
+    query = f"""
+    select 
+        * 
+    from teaching_hours
+    where 1=1
+    and record_date >= "{start_date}"
+    and record_date <= "{end_date}"
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+def get_teaching_hours_summary_taxes(start_date, end_date):
+    query = f"""
+    select 
+        "Grand Total" as `Type`,
+        sum(gross_total) as `Tot`
+    from teaching_hours
+    where 1=1
+    and record_date >= "{start_date}"
+    and record_date <= "{end_date}"
+    union all
+    select 
+        "TKD Total" as `Type`,
+        sum(gross_total) as `Tot`
+    from teaching_hours
+    where 1=1
+    and record_date >= "{start_date}"
+    and record_date <= "{end_date}"
+    and instructor_id != 5
+    union all
+    select 
+        "KRT Total" as `Type`,
+        sum(gross_total) as `Tot`
+    from teaching_hours
+    where 1=1
+    and record_date >= "{start_date}"
+    and record_date <= "{end_date}"
+    and instructor_id = 5
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+def get_teaching_hours_summary_by_instructor_taxes(start_date, end_date):
+    query = f"""
+    select 
+        instructor_id,
+        i.student_id,
+        concat(first_name, " ", last_name) as `name`,
+        i.payment_email_address,
+        sum(hours_worked) as `hours_worked`,
+        sum(gross_total) as `gross_total`
+    from teaching_hours th
+    left join instructors i on i.id = th.instructor_id
+    left join students s on s.id = i.student_id
+    where 1=1
+    and record_date >= "{start_date}"
+    and record_date <= "{end_date}"
+    group by instructor_id
+    order by s.id
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+def get_all_rental_taxes(start_date, end_date):
+    query = f"""
+    select 
+        * 
+    from rental_hours
+    where 1=1
+    and training_date >= "{start_date}"
+    and training_date <= "{end_date}"
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+def get_rental_summary_taxes(start_date, end_date):
+    query = f"""
+    SELECT
+        SUM(gross_total) AS total_gross,
+        SUM(
+            CASE 
+            WHEN DAYOFWEEK(training_date) = 2
+            THEN (2 * pay_rate)
+            ELSE 0
+            END
+        ) AS karate_total,
+        (
+        SUM(gross_total) -
+        SUM(
+            CASE 
+            WHEN DAYOFWEEK(training_date) = 2
+            THEN (2 * pay_rate)
+            ELSE 0
+            END
+        )
+        ) AS taekwondo_total
+    FROM rental_hours
+    WHERE training_date >= '{start_date}'
+    AND training_date <= '{end_date}'
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
+def get_rental_summary_by_instructor_taxes(start_date, end_date):
+    query = f"""
+    select
+        year(training_date) as year,
+        month(training_date) as month,
+        sum(gross_total) as gross_db,
+        rh.payment_sent,
+        rh.payment_date
+    from rental_hours rh
+    where cancelled = 0
+      and training_date >= '{start_date}'
+      and training_date <= '{end_date}'
+    group by month(training_date), year(training_date)
+    ;
+    """
+    cn = get_connection(sql_db = schema)
+    df = get_dataframe(connection=cn, sql=query)
+    return df
 def sp_all_expenses():
     query = "call sp_all_expenses;"
     cn = get_connection(sql_db = schema)
@@ -418,6 +679,13 @@ def log_rental_payment(record_id: int):
     cn = get_connection(sql_db = schema)
     execute_sql(connection=cn, sql=query)
 
+def log_teaching_payment(record_id: int):
+    query = (
+        f"update teaching_hours set payment_sent = 1, payment_date = now(), record_update_timestamp = now() where id = {int(record_id)};"
+    )
+    cn = get_connection(sql_db = schema)
+    execute_sql(connection=cn, sql=query)
+
 def update_teaching_hours_record(
     record_id: int,
     record_date: str,
@@ -467,6 +735,10 @@ def get_tax_expense_categories():
     cn = get_connection(sql_db = schema)
     df = get_dataframe(connection=cn, sql=query)
     return df
+def update_expense_tax_category(expense_id, tax_category_id):
+    query = f"update expense set tax_category = {tax_category_id} where id = {expense_id};"
+    cn = get_connection(sql_db = schema)
+    execute_sql(connection=cn, sql=query)
 
 ## context menu actions, all tabs ##
 def sp_all_students_list():

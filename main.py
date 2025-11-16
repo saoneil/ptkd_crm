@@ -8,7 +8,7 @@ import db, email_handler_google
 from tkinter import font
 
 
-window_width = 1300
+window_width = 1350
 window_height = 775
 
 class MyApp(tk.Tk):
@@ -22,10 +22,12 @@ class MyApp(tk.Tk):
         self.data2 = {}
         self.data3 = {}
         self.data4 = {}
+        self.data5 = {}
         self.df = pd.DataFrame(self.data)
         self.df2 = pd.DataFrame(self.data2)
         self.df3 = pd.DataFrame(self.data3)
         self.df4 = pd.DataFrame(self.data4)
+        self.df5 = pd.DataFrame(self.data5)
 
         self.nb = ttk.Notebook(self, width=window_width, height=window_height)
         self.nb.grid(row=0, column=0)
@@ -66,6 +68,12 @@ class MyApp(tk.Tk):
         # PMA Testing tab state
         self.testing_selected_student_ids = []
         self.testing_selected_count_label = None
+        # Flag to track if we're in Karate view for context menu customization
+        self.is_karate_view = False
+        # Flag to track if we're in Competition view to disable right-click menu
+        self.is_competition_view = False
+        # Flag to track if we're in Uncategorized Expenses view for context menu customization
+        self.is_uncategorized_expenses_view = False
 
         self.create_tabs()
         self.create_frames()
@@ -75,11 +83,13 @@ class MyApp(tk.Tk):
         self.my_tree_admin = ttk.Treeview(self.right_frame_tab4, selectmode='extended')
         self.my_tree_equipment = ttk.Treeview(self.right_frame_tab5)
         self.my_tree_testing = ttk.Treeview(self.top_right_frame_tab3)
+        self.my_tree_taxes = ttk.Treeview(self.right_frame_tab6)
 
         self.refresh_datagrid(self.my_tree, self.df, self.right_frame_tab1)
         self.refresh_datagrid(self.my_tree_admin, self.df2, self.right_frame_tab4)
         self.refresh_datagrid(self.my_tree_equipment, self.df4, self.right_frame_tab5)
         self.refresh_datagrid(self.my_tree_testing, self.df3, self.top_right_frame_tab3)
+        self.refresh_datagrid(self.my_tree_taxes, self.df5, self.right_frame_tab6)
         
         # Add context menu for PMA Equipment tab
         self.setup_equipment_context_menu()
@@ -87,32 +97,54 @@ class MyApp(tk.Tk):
     ## DB Operations ##
     ## tab 1 ##
     def view_all_students_command(self):
+        self.is_karate_view = False
+        self.is_competition_view = False
         df = db.sp_all_active_students()
         print(df)
         self.refresh_datagrid(self.my_tree, df, self.right_frame_tab1)
+    def view_inactive_students_command(self):
+        self.is_karate_view = False
+        self.is_competition_view = False
+        df = db.sp_all_inactive_students()
+        print(df)
+        self.refresh_datagrid(self.my_tree, df, self.right_frame_tab1)
     def view_karate_students_command(self):
+        self.is_karate_view = True
+        self.is_competition_view = False
         df = db.sp_all_active_karate_students()
         print(df)
         self.refresh_datagrid(self.my_tree, df, self.right_frame_tab1)
     def view_competition_data_command(self):
+        self.is_karate_view = False
+        self.is_competition_view = True
+        # Unbind any existing right-click handlers
+        self.my_tree.unbind("<Button-3>")
         df = db.sp_competition_data()
         print(df)
         # Store for export
         self.current_competition_df = df
         self.refresh_datagrid(self.my_tree, df, self.right_frame_tab1)
     def view_trial_students_command(self):
+        self.is_karate_view = False
+        self.is_competition_view = False
         df = db.sp_all_trial_students()
         print(df)
         self.refresh_datagrid(self.my_tree, df, self.right_frame_tab1)
     def view_waitlist_students_command(self):
+        self.is_karate_view = False
+        self.is_competition_view = False
         df = db.sp_all_waitlist_students()
         print(df)
         self.refresh_datagrid(self.my_tree, df, self.right_frame_tab1)
     def view_outstanding_payments(self):
+        self.is_karate_view = False
+        self.is_competition_view = False
         df = db.sp_outstanding_payments()
         print(df)
         self.refresh_datagrid(self.my_tree, df, self.right_frame_tab1)
     def search_grid_tab1_command(self):
+        self.is_karate_view = False
+        self.is_competition_view = False
         for field, entry_widget in self.entry_widgets_search_tab1.items():
             data = entry_widget.get()
             if field == "First Name:":
@@ -1743,6 +1775,211 @@ class MyApp(tk.Tk):
         df = db.sp_all_income()
         print(df)
         self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+    def view_all_income_taxes(self):
+        self.is_uncategorized_expenses_view = False
+        start_date = self.taxes_start_date_entry.get().strip()
+        end_date = self.taxes_end_date_entry.get().strip()
+        if not start_date or not end_date:
+            messagebox.showerror("Input Error", "Please enter both start date and end date.")
+            return
+        try:
+            df = db.get_income_by_date_range(start_date, end_date)
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve income data: {ex}")
+            return
+    def view_ptkd_income_taxes(self):
+        self.is_uncategorized_expenses_view = False
+        start_date = self.taxes_start_date_entry.get().strip()
+        end_date = self.taxes_end_date_entry.get().strip()
+        if not start_date or not end_date:
+            messagebox.showerror("Input Error", "Please enter both start date and end date.")
+            return
+        try:
+            df = db.get_income_by_date_range_and_club(start_date, end_date, "Performance Taekwon-Do")
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve PTKD income data: {ex}")
+            return
+    def view_pkrt_income_taxes(self):
+        self.is_uncategorized_expenses_view = False
+        start_date = self.taxes_start_date_entry.get().strip()
+        end_date = self.taxes_end_date_entry.get().strip()
+        if not start_date or not end_date:
+            messagebox.showerror("Input Error", "Please enter both start date and end date.")
+            return
+        try:
+            df = db.get_income_by_date_range_and_club(start_date, end_date, "Performance Karate")
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve PKRT income data: {ex}")
+            return
+    def view_income_summary_taxes(self):
+        self.is_uncategorized_expenses_view = False
+        start_date = self.taxes_start_date_entry.get().strip()
+        end_date = self.taxes_end_date_entry.get().strip()
+        if not start_date or not end_date:
+            messagebox.showerror("Input Error", "Please enter both start date and end date.")
+            return
+        try:
+            df = db.get_income_summary_by_date_range(start_date, end_date)
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve income summary data: {ex}")
+            return
+    def view_all_expense_taxes(self):
+        self.is_uncategorized_expenses_view = False
+        start_date = self.taxes_start_date_entry.get().strip()
+        end_date = self.taxes_end_date_entry.get().strip()
+        if not start_date or not end_date:
+            messagebox.showerror("Input Error", "Please enter both start date and end date.")
+            return
+        try:
+            df = db.get_expense_by_date_range(start_date, end_date)
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve expense data: {ex}")
+            return
+    def view_ptkd_expense_taxes(self):
+        self.is_uncategorized_expenses_view = False
+        start_date = self.taxes_start_date_entry.get().strip()
+        end_date = self.taxes_end_date_entry.get().strip()
+        if not start_date or not end_date:
+            messagebox.showerror("Input Error", "Please enter both start date and end date.")
+            return
+        try:
+            df = db.get_expense_by_date_range_and_club(start_date, end_date, "PTKD")
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve PTKD expense data: {ex}")
+            return
+    def view_pkrt_expense_taxes(self):
+        self.is_uncategorized_expenses_view = False
+        start_date = self.taxes_start_date_entry.get().strip()
+        end_date = self.taxes_end_date_entry.get().strip()
+        if not start_date or not end_date:
+            messagebox.showerror("Input Error", "Please enter both start date and end date.")
+            return
+        try:
+            df = db.get_expense_by_date_range_and_club(start_date, end_date, "PKRT")
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve PKRT expense data: {ex}")
+            return
+    def view_expense_summary_taxes(self):
+        self.is_uncategorized_expenses_view = False
+        start_date = self.taxes_start_date_entry.get().strip()
+        end_date = self.taxes_end_date_entry.get().strip()
+        if not start_date or not end_date:
+            messagebox.showerror("Input Error", "Please enter both start date and end date.")
+            return
+        try:
+            df = db.get_expense_summary_by_date_range(start_date, end_date)
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve expense summary data: {ex}")
+            return
+    def view_uncategorized_expenses_taxes(self):
+        self.is_uncategorized_expenses_view = True
+        try:
+            df = db.get_uncategorized_expenses()
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve uncategorized expenses: {ex}")
+            return
+    def view_all_teaching_hours_taxes(self):
+        self.is_uncategorized_expenses_view = False
+        start_date = self.taxes_start_date_entry.get().strip()
+        end_date = self.taxes_end_date_entry.get().strip()
+        if not start_date or not end_date:
+            messagebox.showerror("Input Error", "Please enter both start date and end date.")
+            return
+        try:
+            df = db.get_all_teaching_hours_taxes(start_date, end_date)
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve teaching hours: {ex}")
+            return
+    def view_teaching_hours_summary_taxes(self):
+        self.is_uncategorized_expenses_view = False
+        start_date = self.taxes_start_date_entry.get().strip()
+        end_date = self.taxes_end_date_entry.get().strip()
+        if not start_date or not end_date:
+            messagebox.showerror("Input Error", "Please enter both start date and end date.")
+            return
+        try:
+            df = db.get_teaching_hours_summary_taxes(start_date, end_date)
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve teaching hours summary: {ex}")
+            return
+    def view_teaching_hours_summary_by_instructor_taxes(self):
+        self.is_uncategorized_expenses_view = False
+        start_date = self.taxes_start_date_entry.get().strip()
+        end_date = self.taxes_end_date_entry.get().strip()
+        if not start_date or not end_date:
+            messagebox.showerror("Input Error", "Please enter both start date and end date.")
+            return
+        try:
+            df = db.get_teaching_hours_summary_by_instructor_taxes(start_date, end_date)
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve teaching hours summary by instructor: {ex}")
+            return
+    def view_all_rental_taxes(self):
+        self.is_uncategorized_expenses_view = False
+        start_date = self.taxes_start_date_entry.get().strip()
+        end_date = self.taxes_end_date_entry.get().strip()
+        if not start_date or not end_date:
+            messagebox.showerror("Input Error", "Please enter both start date and end date.")
+            return
+        try:
+            df = db.get_all_rental_taxes(start_date, end_date)
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve rental data: {ex}")
+            return
+    def view_rental_summary_taxes(self):
+        self.is_uncategorized_expenses_view = False
+        start_date = self.taxes_start_date_entry.get().strip()
+        end_date = self.taxes_end_date_entry.get().strip()
+        if not start_date or not end_date:
+            messagebox.showerror("Input Error", "Please enter both start date and end date.")
+            return
+        try:
+            df = db.get_rental_summary_taxes(start_date, end_date)
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve rental summary: {ex}")
+            return
+    def view_rental_summary_by_instructor_taxes(self):
+        self.is_uncategorized_expenses_view = False
+        start_date = self.taxes_start_date_entry.get().strip()
+        end_date = self.taxes_end_date_entry.get().strip()
+        if not start_date or not end_date:
+            messagebox.showerror("Input Error", "Please enter both start date and end date.")
+            return
+        try:
+            df = db.get_rental_summary_by_instructor_taxes(start_date, end_date)
+            print(df)
+            self.refresh_datagrid(self.my_tree_taxes, df, self.right_frame_tab6)
+        except Exception as ex:
+            messagebox.showerror("Query Error", f"Failed to retrieve rental summary by month: {ex}")
+            return
     def view_all_exp(self):
         df = db.sp_all_expenses()
         print(df)
@@ -1853,6 +2090,9 @@ class MyApp(tk.Tk):
                     menu.add_command(label="Delete Teaching Record", command=lambda rid=record['id']: self.confirm_delete_teaching_record(rid))
                 except Exception:
                     pass
+                if len(selected_items) > 1:
+                    menu.add_separator()
+                    menu.add_command(label="Add Bulk Payment", command=self.bulk_log_teaching_payment)
         menu.tk_popup(event.x_root, event.y_root)
     def confirm_delete_teaching_record(self, record_id):
         answer = tk.messagebox.askyesno("Confirm Delete", "Are you sure you want to delete this teaching record?")
@@ -1930,6 +2170,23 @@ class MyApp(tk.Tk):
             month_value = int(self.rentals_month_entry.get().strip() or datetime.today().strftime("%m"))
             df = db.get_rental_hours_by_year_month(year_value, month_value)
             self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+        except Exception as ex:
+            tk.messagebox.showerror("Log Payment Error", f"Failed to log payments: {ex}")
+            return
+    def bulk_log_teaching_payment(self):
+        selected_items = self.my_tree_admin.selection()
+        if not selected_items:
+            return
+        try:
+            for item in selected_items:
+                rec_id = int(self.my_tree_admin.item(item, 'values')[0])
+                db.log_teaching_payment(rec_id)
+            # Refresh current teaching view
+            year_value = int(self.teaching_year_entry.get().strip() or datetime.today().strftime("%Y"))
+            month_value = int(self.teaching_month_entry.get().strip() or datetime.today().strftime("%m"))
+            df = db.get_teaching_hours_by_year_month(year_value, month_value)
+            self.refresh_datagrid(self.my_tree_admin, df, self.right_frame_tab4)
+            messagebox.showinfo("Bulk Payment", f"Payment logged for {len(selected_items)} teaching record(s).")
         except Exception as ex:
             tk.messagebox.showerror("Log Payment Error", f"Failed to log payments: {ex}")
             return
@@ -3529,6 +3786,14 @@ class MyApp(tk.Tk):
         tab5.grid_rowconfigure(0, weight=1)
         tab5.grid_columnconfigure(0, weight=1)
         tab5.grid_columnconfigure(1, weight=5)
+
+        tab6 = ttk.Frame(self.nb)
+        self.nb.add(tab6, text='Taxes')
+        self.tab_frames.append(tab6)
+
+        tab6.grid_rowconfigure(0, weight=1)
+        tab6.grid_columnconfigure(0, weight=1)
+        tab6.grid_columnconfigure(1, weight=10)
     def create_frames(self):
         ## tab1 ##
         self.left_frame_tab1 = tk.Frame(self.tab_frames[0])
@@ -3594,6 +3859,17 @@ class MyApp(tk.Tk):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=10)
+
+        ## tab6 ##
+        self.left_frame_tab6 = tk.Frame(self.tab_frames[5])
+        self.left_frame_tab6.grid(row=0, column=0, sticky="nsew")
+
+        self.right_frame_tab6 = tk.Frame(self.tab_frames[5])
+        self.right_frame_tab6.grid(row=0, column=1, sticky="nsew")
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=10)
     def refresh_datagrid(self, treeview:ttk.Treeview, df:pd.DataFrame, tab:tk.Frame):
         treeview.delete(*treeview.get_children())
         treeview['show'] = 'headings'
@@ -3634,7 +3910,13 @@ class MyApp(tk.Tk):
         y_scrollbar.place(x=880, y=30, width=20, height=650, anchor='nw')
 
         if tab == self.right_frame_tab1:
-            treeview.bind("<Button-3>", self.show_right_click_menu)
+            # Don't bind right-click for competition view
+            if not self.is_competition_view:
+                treeview.bind("<Button-3>", self.show_right_click_menu)
+        elif tab == self.right_frame_tab6:
+            # Bind right-click for taxes tab when in uncategorized expenses view
+            if self.is_uncategorized_expenses_view:
+                treeview.bind("<Button-3>", self.show_right_click_menu_taxes)
     def refresh_datagrid_with_coloring(self, treeview:ttk.Treeview, df:pd.DataFrame, tab:tk.Frame, original_df:pd.DataFrame = None):
         treeview.delete(*treeview.get_children())
         treeview['show'] = 'headings'
@@ -3676,7 +3958,13 @@ class MyApp(tk.Tk):
         y_scrollbar.place(x=880, y=30, width=20, height=650, anchor='nw')
 
         if tab == self.right_frame_tab1:
-            treeview.bind("<Button-3>", self.show_right_click_menu)
+            # Don't bind right-click for competition view
+            if not self.is_competition_view:
+                treeview.bind("<Button-3>", self.show_right_click_menu)
+        elif tab == self.right_frame_tab6:
+            # Bind right-click for taxes tab when in uncategorized expenses view
+            if self.is_uncategorized_expenses_view:
+                treeview.bind("<Button-3>", self.show_right_click_menu_taxes)
     def populate_treeview_with_coloring(self, treeview:ttk.Treeview, df:pd.DataFrame, original_df:pd.DataFrame = None):
         # Clear existing items
         treeview.delete(*treeview.get_children())
@@ -3835,7 +4123,13 @@ class MyApp(tk.Tk):
         y_scrollbar.place(x=880, y=30, width=20, height=650, anchor='nw')
 
         if tab == self.right_frame_tab1:
-            treeview.bind("<Button-3>", self.show_right_click_menu)
+            # Don't bind right-click for competition view
+            if not self.is_competition_view:
+                treeview.bind("<Button-3>", self.show_right_click_menu)
+        elif tab == self.right_frame_tab6:
+            # Bind right-click for taxes tab when in uncategorized expenses view
+            if self.is_uncategorized_expenses_view:
+                treeview.bind("<Button-3>", self.show_right_click_menu_taxes)
     def populate_treeview_equipment(self, treeview:ttk.Treeview, df:pd.DataFrame):
         """Populate treeview for PMA Equipment tab"""
         # Clear existing items
@@ -3851,7 +4145,98 @@ class MyApp(tk.Tk):
     def show_right_click_menu(self, event:tk.Event):
         # Set my_tree based on the event widget
         self.my_tree = event.widget
-        self.right_click_menu.post(event.x_root, event.y_root)
+        
+        # If we're in Karate view, show limited menu with only Send Email and Toggle Karate
+        if self.is_karate_view:
+            limited_menu = tk.Menu(self, tearoff=0)
+            limited_menu.add_command(label="Send Email", command=self.send_email_right_click)
+            limited_menu.add_command(label="Toggle 'Karate'", command=self.toggle_karate_right_click)
+            limited_menu.post(event.x_root, event.y_root)
+        else:
+            # Show full menu for all other views
+            self.right_click_menu.post(event.x_root, event.y_root)
+    def show_right_click_menu_taxes(self, event:tk.Event):
+        # Set my_tree based on the event widget
+        self.my_tree = event.widget
+        
+        # If we're in uncategorized expenses view, show menu with Update Tax Category option
+        if self.is_uncategorized_expenses_view:
+            menu = tk.Menu(self, tearoff=0)
+            menu.add_command(label="Update Tax Category", command=self.update_tax_category_right_click)
+            menu.post(event.x_root, event.y_root)
+    def update_tax_category_right_click(self):
+        selected_items = self.my_tree.selection()
+        if not selected_items:
+            messagebox.showwarning("No Selection", "Please select expense record(s) to update tax category.")
+            return
+        
+        # Get tax categories for dropdown
+        try:
+            categories_df = db.get_tax_expense_categories()
+            categories = categories_df['category_name'].tolist()
+            if not categories:
+                messagebox.showerror("Error", "No tax categories found in database.")
+                return
+        except Exception as ex:
+            messagebox.showerror("Error", f"Failed to load tax categories: {ex}")
+            return
+        
+        # Create dialog with dropdown
+        dialog = tk.Toplevel(self)
+        dialog.title("Update Tax Category")
+        dialog.geometry("400x150")
+        dialog.resizable(False, False)
+        
+        # Center the dialog
+        dialog.update_idletasks()
+        x = (dialog.winfo_screenwidth() // 2) - (dialog.winfo_width() // 2)
+        y = (dialog.winfo_screenheight() // 2) - (dialog.winfo_height() // 2)
+        dialog.geometry(f"+{x}+{y}")
+        
+        # Create mapping from category name to id
+        category_map = {row['category_name']: row['id'] for _, row in categories_df.iterrows()}
+        
+        # Label and dropdown
+        tk.Label(dialog, text="Select Tax Category:").pack(pady=10)
+        category_var = tk.StringVar()
+        category_dropdown = ttk.Combobox(dialog, textvariable=category_var, values=categories, state="readonly", width=40)
+        category_dropdown.pack(pady=5)
+        
+        # Buttons
+        button_frame = tk.Frame(dialog)
+        button_frame.pack(pady=10)
+        
+        def on_update():
+            selected_category = category_var.get()
+            if not selected_category:
+                messagebox.showwarning("No Selection", "Please select a tax category.")
+                return
+            
+            tax_category_id = category_map.get(selected_category)
+            if tax_category_id is None:
+                messagebox.showerror("Error", "Invalid tax category selected.")
+                return
+            
+            try:
+                # Get expense IDs from selected items (capture selected_items from outer scope)
+                expense_ids = []
+                for item in selected_items:
+                    values = self.my_tree.item(item, 'values')
+                    # Assuming id is the first column
+                    expense_id = int(values[0])
+                    expense_ids.append(expense_id)
+                    db.update_expense_tax_category(expense_id, tax_category_id)
+                
+                messagebox.showinfo("Success", f"Updated tax category for {len(expense_ids)} expense record(s).")
+                dialog.destroy()
+                
+                # Refresh the uncategorized expenses view
+                self.view_uncategorized_expenses_taxes()
+            except Exception as ex:
+                messagebox.showerror("Error", f"Failed to update tax category: {ex}")
+        
+        tk.Button(button_frame, text="Update", command=on_update, width=10).pack(side=tk.LEFT, padx=5)
+        tk.Button(button_frame, text="Cancel", command=dialog.destroy, width=10).pack(side=tk.LEFT, padx=5)
     def record_payment_right_click(self):
         selected_items = self.my_tree.selection()
         if selected_items:
@@ -4025,6 +4410,10 @@ class MyApp(tk.Tk):
                     button = tk.Button(self.left_frame_tab1, text=button_text, command=command)
                     button.grid(row=row, column=2, sticky='nw', pady=pady)
                     if label_text == "View All Students:":
+                        # Bind right-click to "All Students" button to show inactive students
+                        def _view_inactive_students_event(event, self=self):
+                            self.view_inactive_students_command()
+                        button.bind('<Button-3>', _view_inactive_students_event)
                         # Add Karate Students button to the right of All Students (smaller and closer)
                         button_karate = tk.Button(
                             self.left_frame_tab1,
@@ -4037,7 +4426,8 @@ class MyApp(tk.Tk):
                             self.left_frame_tab1,
                             text="Comp",
                             command=self.view_competition_data_command,
-                            padx=0
+                            padx=0,
+                            bg='#ffcccc'  # Light red color to indicate built-in right-click function
                         )
                         button_comp.grid(row=row, column=4, sticky='nw', pady=pady, padx=(2,0))
                         # Bind right-click to export competition data
@@ -4751,13 +5141,137 @@ class MyApp(tk.Tk):
                     spacer_label = tk.Label(self.left_frame_tab5, text="", height=1)
                     spacer_label.grid(row=row, column=1, columnspan=2, pady=pady)
 
+        def tab6(self):
+            datagrid_label = tk.Label(self.right_frame_tab6, text="Result Datagrid", font="verdana 15 bold")
+            datagrid_label.pack()
+
+            definition_label = tk.Label(self.left_frame_tab6, text="Control Panel", font='verdana 15 bold')
+            definition_label.grid(row=0, column=1, columnspan=2, pady=(0,10))
+
+            # Date range fields below Control Panel (stacked vertically)
+            # Calculate default dates based on current date
+            today = datetime.today()
+            current_month = today.month
+            current_year = today.year
+            
+            # If between April 1st and December 31st: use current year
+            # If between Jan 1st and March 31st: use previous year
+            if current_month >= 4:  # April through December
+                start_year = current_year
+                end_year = current_year
+            else:  # January through March
+                start_year = current_year - 1
+                end_year = current_year - 1
+            
+            start_date_default = f"{start_year}-01-01"
+            end_date_default = f"{end_year}-12-31"
+            
+            start_date_label = tk.Label(self.left_frame_tab6, text="Start Date (y-m-d):")
+            start_date_label.grid(row=1, column=1, sticky='ne', pady=(2,2))
+            self.taxes_start_date_entry = tk.Entry(self.left_frame_tab6, width=12)
+            self.taxes_start_date_entry.grid(row=1, column=2, sticky='nw', pady=(2,2), padx=(2,0))
+            self.taxes_start_date_entry.insert(0, start_date_default)
+
+            end_date_label = tk.Label(self.left_frame_tab6, text="End Date (y-m-d):")
+            end_date_label.grid(row=2, column=1, sticky='ne', pady=(2,2))
+            self.taxes_end_date_entry = tk.Entry(self.left_frame_tab6, width=12)
+            self.taxes_end_date_entry.grid(row=2, column=2, sticky='nw', pady=(2,15), padx=(2,0))
+            self.taxes_end_date_entry.insert(0, end_date_default)
+
+            # Placeholder buttons section
+            placeholder_section = [
+                ("Income:", "All Income", 4, self.view_all_income_taxes, (0, 0)),
+                ("Expenses:", "All Expenses", 5, self.view_all_expense_taxes, (0, 0)),
+                (None, "Uncategorized Expenses", 6, self.view_uncategorized_expenses_taxes, (0, 0)),
+                ("Teaching:", "All Teaching", 7, self.view_all_teaching_hours_taxes, (0, 0)),
+                (None, "Summary by Instructor", 8, self.view_teaching_hours_summary_by_instructor_taxes, (0, 0)),
+                ("Rental:", "All Rental", 9, self.view_all_rental_taxes, (10, 0)),
+                (None, "Summary by Month", 10, self.view_rental_summary_by_instructor_taxes, (0, 0)),
+            ]
+            for label_text, button_text, row, command, pady in placeholder_section:
+                if label_text:
+                    label = tk.Label(self.left_frame_tab6, text=label_text)
+                    label.grid(row=row, column=1, sticky='ne', pady=pady)
+
+                button = tk.Button(self.left_frame_tab6, text=button_text, command=command)
+                if label_text is None:
+                    # Span columns 2-5 to match width of other button rows (All Income, PTKD, PKRT, Summary)
+                    # Add extra bottom padding for "Uncategorized Expenses" button (row 6)
+                    if row == 6:
+                        button.grid(row=row, column=2, columnspan=4, sticky='nw', pady=(0, 10))
+                    else:
+                        button.grid(row=row, column=2, columnspan=4, sticky='nw', pady=pady)
+                else:
+                    button.grid(row=row, column=2, sticky='nw', pady=pady)
+                if label_text == "Income:":
+                    # Add PTKD button to the right of All Income
+                    button_ptkd = tk.Button(
+                        self.left_frame_tab6,
+                        text="PTKD",
+                        command=self.view_ptkd_income_taxes
+                    )
+                    button_ptkd.grid(row=row, column=3, sticky='nw', pady=pady, padx=(2,0))
+                    # Add PKRT button to the right of PTKD
+                    button_pkrt = tk.Button(
+                        self.left_frame_tab6,
+                        text="PKRT",
+                        command=self.view_pkrt_income_taxes
+                    )
+                    button_pkrt.grid(row=row, column=4, sticky='nw', pady=pady, padx=(2,0))
+                    # Add Summary button to the right of PKRT
+                    button_summary = tk.Button(
+                        self.left_frame_tab6,
+                        text="Summary",
+                        command=self.view_income_summary_taxes
+                    )
+                    button_summary.grid(row=row, column=5, sticky='nw', pady=pady, padx=(2,0))
+                if label_text == "Expenses:":
+                    # Add PTKD button to the right of All Expenses
+                    button_ptkd_exp = tk.Button(
+                        self.left_frame_tab6,
+                        text="PTKD",
+                        command=self.view_ptkd_expense_taxes
+                    )
+                    button_ptkd_exp.grid(row=row, column=3, sticky='nw', pady=pady, padx=(2,0))
+                    # Add PKRT button to the right of PTKD
+                    button_pkrt_exp = tk.Button(
+                        self.left_frame_tab6,
+                        text="PKRT",
+                        command=self.view_pkrt_expense_taxes
+                    )
+                    button_pkrt_exp.grid(row=row, column=4, sticky='nw', pady=pady, padx=(2,0))
+                    # Add Summary button to the right of PKRT
+                    button_summary_exp = tk.Button(
+                        self.left_frame_tab6,
+                        text="Summary",
+                        command=self.view_expense_summary_taxes
+                    )
+                    button_summary_exp.grid(row=row, column=5, sticky='nw', pady=pady, padx=(2,0))
+                if label_text == "Teaching:":
+                    # Add Summary button to the right of All Teaching
+                    button_summary_teaching = tk.Button(
+                        self.left_frame_tab6,
+                        text="Summary",
+                        command=self.view_teaching_hours_summary_taxes
+                    )
+                    button_summary_teaching.grid(row=row, column=3, sticky='nw', pady=pady, padx=(2,0))
+                if label_text == "Rental:":
+                    # Add Summary button to the right of All Rental
+                    button_summary_rental = tk.Button(
+                        self.left_frame_tab6,
+                        text="Summary",
+                        command=self.view_rental_summary_taxes
+                    )
+                    button_summary_rental.grid(row=row, column=3, sticky='nw', pady=pady, padx=(2,0))
+
         tab1(self)
         tab2(self)
         tab3(self)
         tab4(self)
         tab5(self)
+        tab6(self)
 
-        
+
 if __name__ == "__main__":
     app = MyApp()
     ttk.Style().theme_use('default')
