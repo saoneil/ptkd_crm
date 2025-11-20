@@ -878,23 +878,33 @@ def insert_stock_order(order_rows, fx_rate):
     order_rows: list of tuples (item_id:int, qty:int, cost_per_usd:float)
     fx_rate: float CAD per USD
     """
+    if not order_rows:
+        return
+    
     cn = get_connection(sql_db = schema)
     fx_sql = float(fx_rate) if fx_rate is not None else 0.0
     
     try:
-        # Insert each row directly into club_equipment_stock_orders
+        # Build a single INSERT statement with multiple VALUES clauses
+        values_list = []
         for item_id, qty, cost_per_usd in order_rows:
             item_id_sql = int(item_id)
             qty_sql = int(qty)
             cpu_sql = float(cost_per_usd)
             cost_per_cad_sql = cpu_sql * fx_sql
             
-            insert_sql = (
-                "insert into club_equipment_stock_orders "
-                "(order_date, item_id, quantity, cost_per_usd, cost_per_cad) "
-                f"values (now(), {item_id_sql}, {qty_sql}, {cpu_sql}, {cost_per_cad_sql});"
-            )
-            execute_sql(connection=cn, sql=insert_sql)
+            values_list.append(f"(now(), {item_id_sql}, {qty_sql}, {cpu_sql}, {cost_per_cad_sql})")
+        
+        # Combine all values into a single INSERT statement
+        values_str = ", ".join(values_list)
+        insert_sql = (
+            "insert into club_equipment_stock_orders "
+            "(order_date, item_id, quantity, cost_per_usd, cost_per_cad) "
+            f"values {values_str};"
+        )
+        
+        # Execute the single combined query
+        execute_sql(connection=cn, sql=insert_sql)
     finally:
         cn.close()
 
