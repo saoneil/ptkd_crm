@@ -345,30 +345,41 @@ def get_expense_by_date_range_and_club(start_date, end_date, club_reference):
 def get_expense_summary_by_date_range(start_date, end_date):
     query = f"""
     select
-        "Grand Total" as `Type`,
-        sum(grand_total) as `Tot`
+        ifnull(e.club_reference, 'Unspecified') as `Club`,
+        ifnull(tax.category_name, 'Uncategorized') as `Category`,
+        sum(e.grand_total) as `Tot`
     from expense e
+    left join tax_expense_category tax on tax.id = e.tax_category
     where 1=1
-    and date_of_transaction >= "{start_date}"
-    and date_of_transaction <= "{end_date}"
+    and e.date_of_transaction >= "{start_date}"
+    and e.date_of_transaction <= "{end_date}"
+    group by e.club_reference, e.tax_category
     union all
     select
-        "TKD Total" as `Type`,
-        sum(grand_total) as `Tot`
+        ifnull(e.club_reference, 'Unspecified') as `Club`,
+        concat(ifnull(e.club_reference, 'Unspecified'), ' Subtotal') as `Category`,
+        sum(e.grand_total) as `Tot`
     from expense e
     where 1=1
-    and date_of_transaction >= "{start_date}"
-    and date_of_transaction <= "{end_date}"
-    and club_reference = "PTKD"
+    and e.date_of_transaction >= "{start_date}"
+    and e.date_of_transaction <= "{end_date}"
+    group by e.club_reference
     union all
     select
-        "KRT Total" as `Type`,
-        sum(grand_total) as `Tot`
+        "Grand Total" as `Club`,
+        "" as `Category`,
+        sum(e.grand_total) as `Tot`
     from expense e
     where 1=1
-    and date_of_transaction >= "{start_date}"
-    and date_of_transaction <= "{end_date}"
-    and club_reference = "PKRT"
+    and e.date_of_transaction >= "{start_date}"
+    and e.date_of_transaction <= "{end_date}"
+    order by 
+        case when `Club` = "Grand Total" then 2 
+             when `Category` like '%Subtotal' then 1 
+             else 0 end,
+        `Club`,
+        case when `Category` like '%Subtotal' then 1 else 0 end,
+        `Category`
     ;
     """
     cn = get_connection(sql_db = schema)
